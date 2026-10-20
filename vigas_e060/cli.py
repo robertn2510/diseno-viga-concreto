@@ -59,6 +59,8 @@ def _config_desde_args(args: argparse.Namespace) -> ConfiguracionDiseno:
         caso_muerta=args.caso_muerta or "",
         caso_viva=args.caso_viva or "",
         casos_sismo=_parse_lista(args.caso_sismo),
+        usar_vc_cero_sismo=not args.sin_vc_cero,
+        p_compresion_negativa=not args.axial_positivo_compresion,
         crear_combos_faltantes=args.crear_combos,
         analizar_si_crea=args.analizar,
         vigas=_parse_lista(args.vigas),
@@ -164,6 +166,14 @@ def _crear_parser() -> argparse.ArgumentParser:
         choices=("usuario", "e060-2009"),
         default="usuario",
         help="Variante de combinación sísmica: 1.25S (usuario) o 1.0S (E.060 2009).",
+    )
+    p.add_argument(
+        "--sin-vc-cero", action="store_true",
+        help="No reduce Vc a cero en la zona de confinamiento (E.060 21.5.4.2).",
+    )
+    p.add_argument(
+        "--axial-positivo-compresion", action="store_true",
+        help="Interpreta P > 0 de ETABS como compresión (por defecto P < 0 es compresión).",
     )
     p.add_argument("--crear-combos", action="store_true", help="Crea en ETABS las combinaciones faltantes.")
     p.add_argument("--analizar", action="store_true", help="Ejecuta el análisis después de crear combos.")

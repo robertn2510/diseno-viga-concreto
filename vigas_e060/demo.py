@@ -221,6 +221,8 @@ def ejecutar_demo(
     """Ejecuta el flujo completo con datos sintéticos."""
     config = config or ConfiguracionDiseno(proyecto="Edificio demostración — Cusco")
     vigas, fuerzas, nombres = datos_demo(config.factor_sismo)
+    if config.max_vigas:
+        vigas = vigas[: config.max_vigas]
     resultados = [disenar_viga(v, fuerzas[v.nombre], config) for v in vigas]
 
     proyecto = (

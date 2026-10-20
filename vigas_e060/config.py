@@ -32,7 +32,6 @@ class ConfiguracionDiseno:
     caso_muerta: str = ""
     caso_viva: str = ""
     casos_sismo: tuple[str, ...] = ()
-    verificar_combinaciones: bool = True
     crear_combos_faltantes: bool = False
     analizar_si_crea: bool = False
 
@@ -40,7 +39,6 @@ class ConfiguracionDiseno:
     vigas: tuple[str, ...] = ()
     secciones: tuple[str, ...] = ()
     pisos: tuple[str, ...] = ()
-    incluir_voladizos: bool = True
     max_vigas: int | None = None
 
     # Salida

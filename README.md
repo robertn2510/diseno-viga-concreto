@@ -151,6 +151,8 @@ La variante adoptada se documenta en la sección 2.2 de la memoria.
 | `--piso "Piso 2"` | Filtra por piso (subcadena). |
 | `--max-vigas N` | Procesa como máximo N vigas. |
 | `--caso-muerta`, `--caso-viva`, `--caso-sismo` | Nombres de los casos de carga. |
+| `--sin-vc-cero` | No aplica la reducción Vc = 0 de 21.5.4.2 (criterio menos conservador). |
+| `--axial-positivo-compresion` | Interpreta P > 0 de ETABS como compresión. |
 | `--crear-combos` | Crea en ETABS las combinaciones E.060 faltantes. |
 | `--analizar` | Ejecuta el análisis después de crear combinaciones. |
 | `--norma-combos {usuario,e060-2009}` | Factor 1.25 o 1.0 sobre la acción sísmica. |
@@ -367,6 +369,9 @@ Resultado esperado: **58 pruebas aprobadas**.
   traslapes; la memoria indica el armado y el estribado, pero el despiece debe
   completarse en el proyecto.
 - No se diseña la losa colaborante; las secciones se tratan como rectangulares.
+- Las vigas en voladizo se diseñan con el mismo procedimiento que las vigas
+  de pórtico; el detalle sísmico de 21.5 supone dos extremos confinados, por
+  lo que el voladizo debe revisarse específicamente.
 - Si una sección no resiste la demanda, el programa coloca la mayor armadura
   comercial que cumple ρ ≤ 0.025 y deja la verificación en **NO CUMPLE** con
   una advertencia; no se inventa una solución no verificable.
