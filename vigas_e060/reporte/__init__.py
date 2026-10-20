@@ -79,7 +79,7 @@ def generar_reporte(
             salidas["docx"] = ruta_docx
         except Exception as exc:
             errores.append(
-                f"No se pudo generar DOCX: {exc} Use --formato md o instale python-docx."
+                f"No se pudo generar DOCX: {exc}"
             )
 
     if not any(k in salidas for k in ("md", "docx")):

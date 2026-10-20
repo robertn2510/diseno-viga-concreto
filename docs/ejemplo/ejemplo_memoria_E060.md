@@ -113,7 +113,7 @@ La variante adoptada en este proyecto es U = 1.25(D + L) ± 1.25S y U = 0.9D ± 
 
 > **Nota:** M+ y M− son los máximos de la envolvente en toda la longitud de la viga, incluidos los ejes de columna; el diseño a flexión se realiza en la cara del apoyo y en el centro de la luz. De igual modo, la columna V (t) es la envolvente global y el cortante de diseño se toma en la cara del apoyo (E.060 21.5.4.1).
 
-Se procesaron 3 vigas. Se registraron 9 observaciones; consulte el detalle por elemento y el Anexo C.
+Se procesaron 3 vigas. Se registraron 7 observaciones; consulte el detalle por elemento y el Anexo C.
 
 
 ---
@@ -155,7 +155,7 @@ Elemento V-101 de sección VP-25x50, ubicado en Piso 2 (Eje A-A / B). Diseño se
 | Ancho | b | 25.0 | cm | — |
 | Peralte total | h | 50.0 | cm | — |
 | Peralte efectivo estimado | d | 44.09 | cm | E.060 10.2.2 |
-| Recubrimiento libre al estribo | r | 4.00 | cm | E.060 7.6.1 |
+| Recubrimiento libre al estribo | r | 4.00 | cm | E.060 7.7.1 |
 | Diámetro de estribo | Øe | 0.953 | cm | E.060 21.5.3.2 |
 | Área bruta | Ag | 1250.0 | cm² | — |
 | Longitud entre ejes | L | 6.000 | m | — |
@@ -787,7 +787,6 @@ Verificaciones de cortante:
 
 - Algunas secciones se diseñaron con un momento mayor que el de la envolvente para cumplir los mínimos de continuidad del capítulo 21.
 - Se aumentó el acero para cumplir Mn+ ≥ Mn−/2 (E.060 21.5.2.3) y Mn ≥ Mn,max/4 (E.060 21.5.2.4): Mn pasó de 6.82 a 8.97 t·m.
-- Se aumentó el acero para cumplir Mn+ ≥ Mn−/2 (E.060 21.5.2.3) y Mn ≥ Mn,max/4 (E.060 21.5.2.4): Mn pasó de 6.82 a 8.97 t·m.
 
 
 ---
@@ -824,7 +823,7 @@ Elemento V-201 de sección VP-30x60, ubicado en Piso 3 (Eje B-B / C). Diseño se
 | Ancho | b | 30.0 | cm | — |
 | Peralte total | h | 60.0 | cm | — |
 | Peralte efectivo estimado | d | 54.09 | cm | E.060 10.2.2 |
-| Recubrimiento libre al estribo | r | 4.00 | cm | E.060 7.6.1 |
+| Recubrimiento libre al estribo | r | 4.00 | cm | E.060 7.7.1 |
 | Diámetro de estribo | Øe | 0.953 | cm | E.060 21.5.3.2 |
 | Área bruta | Ag | 1800.0 | cm² | — |
 | Longitud entre ejes | L | 7.500 | m | — |
@@ -1456,7 +1455,6 @@ Verificaciones de cortante:
 
 - Algunas secciones se diseñaron con un momento mayor que el de la envolvente para cumplir los mínimos de continuidad del capítulo 21.
 - Se aumentó el acero para cumplir Mn+ ≥ Mn−/2 (E.060 21.5.2.3) y Mn ≥ Mn,max/4 (E.060 21.5.2.4): Mn pasó de 11.29 a 17.27 t·m.
-- Se aumentó el acero para cumplir Mn+ ≥ Mn−/2 (E.060 21.5.2.3) y Mn ≥ Mn,max/4 (E.060 21.5.2.4): Mn pasó de 11.29 a 17.27 t·m.
 
 
 ---
@@ -1493,7 +1491,7 @@ Elemento V-301 de sección VP-25x50, ubicado en Piso 1 (Eje C-C / D). Diseño se
 | Ancho | b | 25.0 | cm | — |
 | Peralte total | h | 50.0 | cm | — |
 | Peralte efectivo estimado | d | 44.09 | cm | E.060 10.2.2 |
-| Recubrimiento libre al estribo | r | 4.00 | cm | E.060 7.6.1 |
+| Recubrimiento libre al estribo | r | 4.00 | cm | E.060 7.7.1 |
 | Diámetro de estribo | Øe | 0.953 | cm | E.060 21.5.3.2 |
 | Área bruta | Ag | 1250.0 | cm² | — |
 | Longitud entre ejes | L | 5.000 | m | — |
@@ -2355,7 +2353,7 @@ sconf ≤ mín(d/4; 8db,long; 24db,est; 30 cm);  scentral ≤ d/2
 | Refuerzo longitudinal | 21.5.2 | 2 barras continuas; ρ ≤ 0.025; Mn+/Mn− |
 | Confinamiento | 21.5.3 | 2h; primer estribo 5 cm; sconf |
 | Cortante por capacidad | 21.5.4 | Mpr = 1.25Mn; Vc = 0 |
-| Recubrimiento | 7.6.1 | r = 4 cm (configurable) |
+| Recubrimiento | 7.7.1 | r = 4 cm (configurable) |
 | Ganchos sísmicos | 7.1.3 | 135°, 8db ≥ 75 mm |
 
 
@@ -2403,13 +2401,11 @@ Esta memoria no sustituye la revisión profesional ni el despiece. Los resultado
 
 - Algunas secciones se diseñaron con un momento mayor que el de la envolvente para cumplir los mínimos de continuidad del capítulo 21.
 - Se aumentó el acero para cumplir Mn+ ≥ Mn−/2 (E.060 21.5.2.3) y Mn ≥ Mn,max/4 (E.060 21.5.2.4): Mn pasó de 6.82 a 8.97 t·m.
-- Se aumentó el acero para cumplir Mn+ ≥ Mn−/2 (E.060 21.5.2.3) y Mn ≥ Mn,max/4 (E.060 21.5.2.4): Mn pasó de 6.82 a 8.97 t·m.
 
 
 ### Viga V-201
 
 - Algunas secciones se diseñaron con un momento mayor que el de la envolvente para cumplir los mínimos de continuidad del capítulo 21.
-- Se aumentó el acero para cumplir Mn+ ≥ Mn−/2 (E.060 21.5.2.3) y Mn ≥ Mn,max/4 (E.060 21.5.2.4): Mn pasó de 11.29 a 17.27 t·m.
 - Se aumentó el acero para cumplir Mn+ ≥ Mn−/2 (E.060 21.5.2.3) y Mn ≥ Mn,max/4 (E.060 21.5.2.4): Mn pasó de 11.29 a 17.27 t·m.
 
 

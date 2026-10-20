@@ -233,6 +233,8 @@ las creadas por el programa; las parciales se informan y no se usan.
 | Mn+ ≥ Mn−/2 en la cara del nudo | 21.5.2.3 |
 | Mn ≥ Mn,max/4 en toda la viga | 21.5.2.4 |
 | Dos barras continuas superior e inferior | 21.5.2.1 |
+| Recubrimiento mínimo de vigas (4 cm) | 7.7.1 |
+| Separación libre entre barras ≥ máx(db; 2.5 cm) | 7.6.1 |
 
 El programa resuelve la ecuación cuadrática de flexión simple; si `Mu` supera
 la capacidad con εt = 0.005, diseña armadura doble fijando `c = 0.375d` y

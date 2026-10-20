@@ -331,7 +331,7 @@ def extraer_vigas(conexion, config: ConfiguracionDiseno) -> list[VigaETABS]:
         if b < 0.25 * h:
             advertencias.append("b < 0.25h: no cumple E.060 21.5.1.3.")
         if r < 3.0:
-            advertencias.append("Recubrimiento libre < 3 cm; revise E.060 7.6.1.")
+            advertencias.append("Recubrimiento libre < 3 cm; revise E.060 7.7.1.")
 
         ln, off_i, off_j, soportes = _estimar_luz_libre(
             conexion, f, frames, cache_secciones
