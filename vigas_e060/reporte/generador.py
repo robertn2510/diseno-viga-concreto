@@ -209,17 +209,32 @@ def _seccion_flexion(doc: Documento, r: ResultadoViga) -> None:
         anchos=[4.6, 1.7, 1.7, 1.8, 1.8, 3.4, 1.3, 1.8, 1.8],
     )
 
-    # Detalle de las secciones gobernantes
-    superiores = [x for x in r.flexion if x.lado == "superior"]
-    inferiores = [x for x in r.flexion if x.lado == "inferior"]
-    detalle: list[ResultadoFlexion] = []
-    if superiores:
-        detalle.append(max(superiores, key=lambda x: x.Mu_tm))
-    if inferiores:
-        detalle.append(max(inferiores, key=lambda x: x.Mu_tm))
+    # Detalle paso a paso de las secciones diseñadas: se toma la sección
+    # gobernante de cada par (ubicación, fibra).
+    grupos: dict[tuple[str, str], list[ResultadoFlexion]] = {}
     for x in r.flexion:
-        if (x.doble or x.motivo_ampliacion) and x not in detalle:
-            detalle.append(x)
+        grupos.setdefault((x.ubicacion, x.lado), []).append(x)
+    detalle: list[ResultadoFlexion] = [
+        max(g, key=lambda x: x.Mu_tm) for g in grupos.values()
+    ]
+
+    # Orden de lectura: apoyo izquierdo, centro, máximos en la luz, apoyo
+    # derecho; dentro de cada ubicación, fibra superior antes que inferior.
+    def _orden(x: ResultadoFlexion) -> tuple[int, int]:
+        u = x.ubicacion.lower()
+        if u.startswith("apoyo izquierdo"):
+            pos = 0
+        elif u.startswith("centro"):
+            pos = 1
+        elif u.startswith("m+"):
+            pos = 2
+        elif u.startswith("m−"):
+            pos = 3
+        else:
+            pos = 4
+        return pos, 0 if x.lado == "superior" else 1
+
+    detalle.sort(key=_orden)
 
     for x in detalle:
         titulo = (

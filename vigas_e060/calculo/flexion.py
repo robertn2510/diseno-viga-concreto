@@ -102,16 +102,22 @@ def _crear_formulas_base(
             "E.060 21.5.2.2 / 9.3.2.1",
         ),
     ]
-    if lado == "superior":
-        formulas.append(
-            Formula(
-                "Armadura superior",
-                "Mu− produce tracción en la cara superior; d se mide desde el borde superior.",
-                f"d = h − r − Øe − Ø/2 = {h:.1f} − ... = {d:.2f} cm",
-                f"d = {d:.2f} cm",
-                "E.060 10.2.2",
-            )
+    # El peralte efectivo se mide desde la fibra comprimida hasta el centroide
+    # de la armadura traccionada colocada (E.060 10.2.2).  Como y_s está
+    # referido a la cara traccionada, d = h − y_s en ambas direcciones.
+    y_s = h - d
+    formulas.append(
+        Formula(
+            "Peralte efectivo",
+            "d = h − y_s",
+            f"d = {h:.1f} − {y_s:.2f} = {d:.2f} cm",
+            (
+                f"d = {d:.2f} cm (y_s = {y_s:.2f} cm: centroide de la armadura "
+                f"traccionada medido desde la cara {lado} del elemento)"
+            ),
+            "E.060 10.2.2",
         )
+    )
     return formulas
 
 

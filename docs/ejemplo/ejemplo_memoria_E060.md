@@ -200,22 +200,22 @@ Se diseñaron las secciones críticas de apoyo y centro, además de las estacion
 | Apoyo derecho (cara) (*) | inferior | 7.32 | 4.58 | 5.08 | 4 Φ 1/2" | No | 8.07 | CUMPLE |
 
 
-#### Detalle: Apoyo derecho (cara) — fibra superior (Mu de diseño = 13.96 t·m)
+#### Detalle: Apoyo izquierdo (cara) — fibra superior (Mu de diseño = 13.06 t·m)
 
 | Parámetro | Valor | Parámetro | Valor |
 | --- | --- | --- | --- |
-| Ubicación | Apoyo derecho (cara) | Fibra diseñada | superior |
-| Mu (t·m) | 13.963 | d (cm) | 42.62 |
+| Ubicación | Apoyo izquierdo (cara) | Fibra diseñada | superior |
+| Mu (t·m) | 13.063 | d (cm) | 42.62 |
 | As mínimo (cm²) | 2.573 | As máximo (cm²) | 14.434 |
 | Criterio de As máximo | εt = 0.005 (φ = 0.90) | Mu máximo simple (t·m) | 19.547 |
-| As calculado (cm²) | 9.708 | As requerido (cm²) | 9.708 |
+| As calculado (cm²) | 9.003 | As requerido (cm²) | 9.003 |
 | As colocado (cm²) | 9.900 | Varillas | 5 Φ 5/8" |
 | ¿Doble refuerzo? | No | As' requerido (cm²) | — |
 | As' colocado (cm²) | — | Varillas de compresión | — |
 | a (cm) | 9.318 | c (cm) | 10.962 |
 | εt | 0.00866 | φ | 0.900 |
 | Mn (t·m) | 15.784 | φMn (t·m) | 14.205 |
-| As colocado / requerido | 1.02 | Estado | CUMPLE |
+| As colocado / requerido | 1.10 | Estado | CUMPLE |
 
 **E.060 10.2.7.3**
 ```text
@@ -251,18 +251,18 @@ As,max = mín(16.981; 14.434; 26.637) = 14.434 cm² (gobierna: εt = 0.005 (φ =
 
 **E.060 10.2.2**
 ```text
-Armadura superior
-Mu− produce tracción en la cara superior; d se mide desde el borde superior.
-d = h − r − Øe − Ø/2 = 50.0 − ... = 42.62 cm
-→ d = 42.62 cm
+Peralte efectivo
+d = h − y_s
+d = 50.0 − 7.38 = 42.62 cm
+→ d = 42.62 cm (y_s = 7.38 cm: centroide de la armadura traccionada medido desde la cara superior del elemento)
 ```
 
 **E.060 10.3.1**
 ```text
 Ecuación de flexión simple
 Mu = φ·As·fy·(d − a/2),  a = As·fy/(0.85·f'c·b)
-13.963·10⁵ = 0.90·As·4200·(42.62 − As·4200/(2·0.85·210·25.0))
-→ As = 9.708 cm²  (discriminante = 1.978e+10)
+13.063·10⁵ = 0.90·As·4200·(42.62 − As·4200/(2·0.85·210·25.0))
+→ As = 9.003 cm²  (discriminante = 2.057e+10)
 ```
 
 **E.060 10.2.7**
@@ -293,7 +293,7 @@ Mn = 9.900·4200·(42.62 − 9.318/2)/10⁵
 ```text
 Selección comercial
 As,prov ≥ As,req
-5 Φ 5/8" → As,prov = 9.900 cm² ≥ 9.708 cm²
+5 Φ 5/8" → As,prov = 9.900 cm² ≥ 9.003 cm²
 → 5 Φ 5/8"  (d = 42.62 cm)
 ```
 
@@ -306,114 +306,10 @@ Verificaciones de la sección:
 | Límite de armadura simple (ductilidad) | As = 9.900 cm² | As,max = 14.434 cm² | CUMPLE | E.060 10.3.5 / 9.3.2.1 | El límite asegura εt ≥ 0.005 y φ = 0.90. |
 | Control de ductilidad | εt = 0.00866 | εt ≥ 0.004 | CUMPLE | E.060 10.3.5 |  |
 | Factor de reducción φ | φ = 0.900 (εt = 0.00866) | φ = 0.65 + 0.25·(εt − 0.002)/0.003 ≤ 0.90 | CUMPLE | E.060 9.3.2.2 | Sección controlada por tracción (φ = 0.90). |
-| Resistencia a flexión | φMn = 14.205 t·m | Mu = 13.963 t·m | CUMPLE | E.060 9.3.2.1 |  |
+| Resistencia a flexión | φMn = 14.205 t·m | Mu = 13.063 t·m | CUMPLE | E.060 9.3.2.1 |  |
 | Separación libre entre barras | s = 5.17 cm | s ≥ máx(Ø; 2.5 cm) = 2.50 cm | CUMPLE | E.060 7.6.1 |  |
 | Número mínimo de barras | 5 barras | ≥ 2 barras | CUMPLE | E.060 21.5.2.1 |  |
 | Colocación en la sección | y = 7.38 cm | y ≤ h/2 = 25.00 cm | CUMPLE | E.060 7.6 / 7.7 |  |
-
-
-#### Detalle: Centro — fibra inferior (Mu de diseño = 10.00 t·m)
-
-| Parámetro | Valor | Parámetro | Valor |
-| --- | --- | --- | --- |
-| Ubicación | Centro | Fibra diseñada | inferior |
-| Mu (t·m) | 10.000 | d (cm) | 42.53 |
-| As mínimo (cm²) | 2.568 | As máximo (cm²) | 14.403 |
-| Criterio de As máximo | εt = 0.005 (φ = 0.90) | Mu máximo simple (t·m) | 19.463 |
-| As calculado (cm²) | 6.720 | As requerido (cm²) | 6.720 |
-| As colocado (cm²) | 7.620 | Varillas | 6 Φ 1/2" |
-| ¿Doble refuerzo? | No | As' requerido (cm²) | — |
-| As' colocado (cm²) | — | Varillas de compresión | — |
-| a (cm) | 7.172 | c (cm) | 8.437 |
-| εt | 0.01212 | φ | 0.900 |
-| Mn (t·m) | 12.463 | φMn (t·m) | 11.217 |
-| As colocado / requerido | 1.13 | Estado | CUMPLE |
-
-**E.060 10.2.7.3**
-```text
-Factor β1 del bloque rectangular
-β1 = 0.85
-f'c = 210 kgf/cm² ≤ 280 → β1 = 0.85
-→ β1 = 0.8500
-```
-
-**E.060 10.3.2**
-```text
-Cuantía balanceada
-ρb = 0.85·β1·(f'c/fy)·[0.003/(0.003 + fy/Es)]
-ρb = 0.85·0.8500·(210/4200)·[0.003/(0.003 + 4200/2000000)]
-→ ρb = 0.02125
-```
-
-**E.060 10.5.1**
-```text
-Acero mínimo a flexión
-As,min = 0.7·√(f'c)/fy · b·d
-As,min = 0.7·√210/4200 · 25.0 · 42.53 = 2.568 cm²
-→ As,min = 2.568 cm²
-```
-
-**E.060 21.5.2.2 / 9.3.2.1**
-```text
-Acero máximo y momento máximo con armadura simple
-As,max = mín(fracción·ρb·b·d; 0.85·f'c·b·a(εt=0.005)/fy; 0.025·b·d)
-As,max = mín(16.945; 14.403; 26.580) = 14.403 cm² (gobierna: εt = 0.005 (φ = 0.90))
-→ a_max = 13.556 cm; Mu,max = φ·As,max·fy·(d − a_max/2)/10⁵ = 19.463 t·m
-```
-
-**E.060 10.3.1**
-```text
-Ecuación de flexión simple
-Mu = φ·As·fy·(d − a/2),  a = As·fy/(0.85·f'c·b)
-10.000·10⁵ = 0.90·As·4200·(42.53 − As·4200/(2·0.85·210·25.0))
-→ As = 6.720 cm²  (discriminante = 2.312e+10)
-```
-
-**E.060 10.2.7**
-```text
-Profundidad real del bloque y eje neutro
-a = As·fy/(0.85·f'c·b);  c = a/β1
-a = 7.620·4200/(0.85·210·25.0) = 7.172 cm; c = 8.437 cm
-→ a = 7.172 cm; c = 8.437 cm
-```
-
-**E.060 9.3.2**
-```text
-Deformación y factor φ
-εt = 0.003·(d − c)/c;  φ = f(εt)
-εt = 0.003·(42.53 − 8.437)/8.437 = 0.01212
-→ φ = 0.900
-```
-
-**E.060 10.3.1 / 9.3.2.1**
-```text
-Resistencia nominal y de diseño
-Mn = As·fy·(d − a/2);  φMn = φ·Mn
-Mn = 7.620·4200·(42.53 − 7.172/2)/10⁵
-→ Mn = 12.463 t·m; φMn = 11.217 t·m
-```
-
-**E.060 7.6 / 21.5.2**
-```text
-Selección comercial
-As,prov ≥ As,req
-6 Φ 1/2" → As,prov = 7.620 cm² ≥ 6.720 cm²
-→ 6 Φ 1/2"  (d = 42.53 cm)
-```
-
-Verificaciones de la sección:
-
-| Verificación | Valor | Límite / criterio | Estado | Referencia | Observación |
-| --- | --- | --- | --- | --- | --- |
-| Acero mínimo | As = 7.620 cm² | As,min = 2.568 cm² | CUMPLE | E.060 10.5.1 |  |
-| Cuantía máxima sísmica | ρ = 0.00717 | ρ ≤ 0.025 | CUMPLE | E.060 21.5.2.2 |  |
-| Límite de armadura simple (ductilidad) | As = 7.620 cm² | As,max = 14.403 cm² | CUMPLE | E.060 10.3.5 / 9.3.2.1 | El límite asegura εt ≥ 0.005 y φ = 0.90. |
-| Control de ductilidad | εt = 0.01212 | εt ≥ 0.004 | CUMPLE | E.060 10.3.5 |  |
-| Factor de reducción φ | φ = 0.900 (εt = 0.01212) | φ = 0.65 + 0.25·(εt − 0.002)/0.003 ≤ 0.90 | CUMPLE | E.060 9.3.2.2 | Sección controlada por tracción (φ = 0.90). |
-| Resistencia a flexión | φMn = 11.217 t·m | Mu = 10.000 t·m | CUMPLE | E.060 9.3.2.1 |  |
-| Separación libre entre barras | s = 5.64 cm | s ≥ máx(Ø; 2.5 cm) = 2.50 cm | CUMPLE | E.060 7.6.1 |  |
-| Número mínimo de barras | 6 barras | ≥ 2 barras | CUMPLE | E.060 21.5.2.1 |  |
-| Colocación en la sección | y = 7.47 cm | y ≤ h/2 = 25.00 cm | CUMPLE | E.060 7.6 / 7.7 |  |
 
 
 #### Detalle: Apoyo izquierdo (cara) — fibra inferior (Mu de diseño = 7.32 t·m) — ampliada por Mn+ ≥ Mn−/2 (E.060 21.5.2.3); Mn ≥ Mn,max/4 (E.060 21.5.2.4); demanda ETABS = 0.00 t·m
@@ -464,6 +360,14 @@ Acero máximo y momento máximo con armadura simple
 As,max = mín(fracción·ρb·b·d; 0.85·f'c·b·a(εt=0.005)/fy; 0.025·b·d)
 As,max = mín(17.696; 15.041; 27.758) = 15.041 cm² (gobierna: εt = 0.005 (φ = 0.90))
 → a_max = 14.156 cm; Mu,max = φ·As,max·fy·(d − a_max/2)/10⁵ = 21.227 t·m
+```
+
+**E.060 10.2.2**
+```text
+Peralte efectivo
+d = h − y_s
+d = 50.0 − 5.59 = 44.41 cm
+→ d = 44.41 cm (y_s = 5.59 cm: centroide de la armadura traccionada medido desde la cara inferior del elemento)
 ```
 
 **E.060 10.3.1**
@@ -521,6 +425,350 @@ Verificaciones de la sección:
 | Colocación en la sección | y = 5.59 cm | y ≤ h/2 = 25.00 cm | CUMPLE | E.060 7.6 / 7.7 |  |
 
 
+#### Detalle: Centro — fibra superior (Mu de diseño = 0.00 t·m)
+
+| Parámetro | Valor | Parámetro | Valor |
+| --- | --- | --- | --- |
+| Ubicación | Centro | Fibra diseñada | superior |
+| Mu (t·m) | 0.000 | d (cm) | 44.41 |
+| As mínimo (cm²) | 2.682 | As máximo (cm²) | 15.041 |
+| Criterio de As máximo | εt = 0.005 (φ = 0.90) | Mu máximo simple (t·m) | 21.227 |
+| As calculado (cm²) | 0.000 | As requerido (cm²) | 2.682 |
+| As colocado (cm²) | 3.810 | Varillas | 3 Φ 1/2" |
+| ¿Doble refuerzo? | No | As' requerido (cm²) | — |
+| As' colocado (cm²) | — | Varillas de compresión | — |
+| a (cm) | 3.586 | c (cm) | 4.219 |
+| εt | 0.02858 | φ | 0.900 |
+| Mn (t·m) | 6.820 | φMn (t·m) | 6.138 |
+| As colocado / requerido | 1.42 | Estado | CUMPLE |
+
+**E.060 10.2.7.3**
+```text
+Factor β1 del bloque rectangular
+β1 = 0.85
+f'c = 210 kgf/cm² ≤ 280 → β1 = 0.85
+→ β1 = 0.8500
+```
+
+**E.060 10.3.2**
+```text
+Cuantía balanceada
+ρb = 0.85·β1·(f'c/fy)·[0.003/(0.003 + fy/Es)]
+ρb = 0.85·0.8500·(210/4200)·[0.003/(0.003 + 4200/2000000)]
+→ ρb = 0.02125
+```
+
+**E.060 10.5.1**
+```text
+Acero mínimo a flexión
+As,min = 0.7·√(f'c)/fy · b·d
+As,min = 0.7·√210/4200 · 25.0 · 44.41 = 2.682 cm²
+→ As,min = 2.682 cm²
+```
+
+**E.060 21.5.2.2 / 9.3.2.1**
+```text
+Acero máximo y momento máximo con armadura simple
+As,max = mín(fracción·ρb·b·d; 0.85·f'c·b·a(εt=0.005)/fy; 0.025·b·d)
+As,max = mín(17.696; 15.041; 27.758) = 15.041 cm² (gobierna: εt = 0.005 (φ = 0.90))
+→ a_max = 14.156 cm; Mu,max = φ·As,max·fy·(d − a_max/2)/10⁵ = 21.227 t·m
+```
+
+**E.060 10.2.2**
+```text
+Peralte efectivo
+d = h − y_s
+d = 50.0 − 5.59 = 44.41 cm
+→ d = 44.41 cm (y_s = 5.59 cm: centroide de la armadura traccionada medido desde la cara superior del elemento)
+```
+
+**E.060 10.3.1**
+```text
+Ecuación de flexión simple
+Mu = φ·As·fy·(d − a/2),  a = As·fy/(0.85·f'c·b)
+0.000·10⁵ = 0.90·As·4200·(44.41 − As·4200/(2·0.85·210·25.0))
+→ As = 0.000 cm²  (discriminante = 3.479e+10)
+```
+
+**E.060 10.5.1**
+```text
+Gobierna el acero mínimo
+As,req = máx(As,calculado; As,min)
+As,req = máx(0.000; 2.682)
+→ As,req = 2.682 cm²
+```
+
+**E.060 10.2.7**
+```text
+Profundidad real del bloque y eje neutro
+a = As·fy/(0.85·f'c·b);  c = a/β1
+a = 3.810·4200/(0.85·210·25.0) = 3.586 cm; c = 4.219 cm
+→ a = 3.586 cm; c = 4.219 cm
+```
+
+**E.060 9.3.2**
+```text
+Deformación y factor φ
+εt = 0.003·(d − c)/c;  φ = f(εt)
+εt = 0.003·(44.41 − 4.219)/4.219 = 0.02858
+→ φ = 0.900
+```
+
+**E.060 10.3.1 / 9.3.2.1**
+```text
+Resistencia nominal y de diseño
+Mn = As·fy·(d − a/2);  φMn = φ·Mn
+Mn = 3.810·4200·(44.41 − 3.586/2)/10⁵
+→ Mn = 6.820 t·m; φMn = 6.138 t·m
+```
+
+**E.060 7.6 / 21.5.2**
+```text
+Selección comercial
+As,prov ≥ As,req
+3 Φ 1/2" → As,prov = 3.810 cm² ≥ 2.682 cm²
+→ 3 Φ 1/2"  (d = 44.41 cm)
+```
+
+Verificaciones de la sección:
+
+| Verificación | Valor | Límite / criterio | Estado | Referencia | Observación |
+| --- | --- | --- | --- | --- | --- |
+| Acero mínimo | As = 3.810 cm² | As,min = 2.682 cm² | CUMPLE | E.060 10.5.1 |  |
+| Cuantía máxima sísmica | ρ = 0.00343 | ρ ≤ 0.025 | CUMPLE | E.060 21.5.2.2 |  |
+| Límite de armadura simple (ductilidad) | As = 3.810 cm² | As,max = 15.041 cm² | CUMPLE | E.060 10.3.5 / 9.3.2.1 | El límite asegura εt ≥ 0.005 y φ = 0.90. |
+| Control de ductilidad | εt = 0.02858 | εt ≥ 0.004 | CUMPLE | E.060 10.3.5 |  |
+| Factor de reducción φ | φ = 0.900 (εt = 0.02858) | φ = 0.65 + 0.25·(εt − 0.002)/0.003 ≤ 0.90 | CUMPLE | E.060 9.3.2.2 | Sección controlada por tracción (φ = 0.90). |
+| Resistencia a flexión | φMn = 6.138 t·m | Mu = 0.000 t·m | CUMPLE | E.060 9.3.2.1 |  |
+| Separación libre entre barras | s = 5.64 cm | s ≥ máx(Ø; 2.5 cm) = 2.50 cm | CUMPLE | E.060 7.6.1 |  |
+| Número mínimo de barras | 3 barras | ≥ 2 barras | CUMPLE | E.060 21.5.2.1 |  |
+| Colocación en la sección | y = 5.59 cm | y ≤ h/2 = 25.00 cm | CUMPLE | E.060 7.6 / 7.7 |  |
+
+
+#### Detalle: Centro — fibra inferior (Mu de diseño = 10.00 t·m)
+
+| Parámetro | Valor | Parámetro | Valor |
+| --- | --- | --- | --- |
+| Ubicación | Centro | Fibra diseñada | inferior |
+| Mu (t·m) | 10.000 | d (cm) | 42.53 |
+| As mínimo (cm²) | 2.568 | As máximo (cm²) | 14.403 |
+| Criterio de As máximo | εt = 0.005 (φ = 0.90) | Mu máximo simple (t·m) | 19.463 |
+| As calculado (cm²) | 6.720 | As requerido (cm²) | 6.720 |
+| As colocado (cm²) | 7.620 | Varillas | 6 Φ 1/2" |
+| ¿Doble refuerzo? | No | As' requerido (cm²) | — |
+| As' colocado (cm²) | — | Varillas de compresión | — |
+| a (cm) | 7.172 | c (cm) | 8.437 |
+| εt | 0.01212 | φ | 0.900 |
+| Mn (t·m) | 12.463 | φMn (t·m) | 11.217 |
+| As colocado / requerido | 1.13 | Estado | CUMPLE |
+
+**E.060 10.2.7.3**
+```text
+Factor β1 del bloque rectangular
+β1 = 0.85
+f'c = 210 kgf/cm² ≤ 280 → β1 = 0.85
+→ β1 = 0.8500
+```
+
+**E.060 10.3.2**
+```text
+Cuantía balanceada
+ρb = 0.85·β1·(f'c/fy)·[0.003/(0.003 + fy/Es)]
+ρb = 0.85·0.8500·(210/4200)·[0.003/(0.003 + 4200/2000000)]
+→ ρb = 0.02125
+```
+
+**E.060 10.5.1**
+```text
+Acero mínimo a flexión
+As,min = 0.7·√(f'c)/fy · b·d
+As,min = 0.7·√210/4200 · 25.0 · 42.53 = 2.568 cm²
+→ As,min = 2.568 cm²
+```
+
+**E.060 21.5.2.2 / 9.3.2.1**
+```text
+Acero máximo y momento máximo con armadura simple
+As,max = mín(fracción·ρb·b·d; 0.85·f'c·b·a(εt=0.005)/fy; 0.025·b·d)
+As,max = mín(16.945; 14.403; 26.580) = 14.403 cm² (gobierna: εt = 0.005 (φ = 0.90))
+→ a_max = 13.556 cm; Mu,max = φ·As,max·fy·(d − a_max/2)/10⁵ = 19.463 t·m
+```
+
+**E.060 10.2.2**
+```text
+Peralte efectivo
+d = h − y_s
+d = 50.0 − 7.47 = 42.53 cm
+→ d = 42.53 cm (y_s = 7.47 cm: centroide de la armadura traccionada medido desde la cara inferior del elemento)
+```
+
+**E.060 10.3.1**
+```text
+Ecuación de flexión simple
+Mu = φ·As·fy·(d − a/2),  a = As·fy/(0.85·f'c·b)
+10.000·10⁵ = 0.90·As·4200·(42.53 − As·4200/(2·0.85·210·25.0))
+→ As = 6.720 cm²  (discriminante = 2.312e+10)
+```
+
+**E.060 10.2.7**
+```text
+Profundidad real del bloque y eje neutro
+a = As·fy/(0.85·f'c·b);  c = a/β1
+a = 7.620·4200/(0.85·210·25.0) = 7.172 cm; c = 8.437 cm
+→ a = 7.172 cm; c = 8.437 cm
+```
+
+**E.060 9.3.2**
+```text
+Deformación y factor φ
+εt = 0.003·(d − c)/c;  φ = f(εt)
+εt = 0.003·(42.53 − 8.437)/8.437 = 0.01212
+→ φ = 0.900
+```
+
+**E.060 10.3.1 / 9.3.2.1**
+```text
+Resistencia nominal y de diseño
+Mn = As·fy·(d − a/2);  φMn = φ·Mn
+Mn = 7.620·4200·(42.53 − 7.172/2)/10⁵
+→ Mn = 12.463 t·m; φMn = 11.217 t·m
+```
+
+**E.060 7.6 / 21.5.2**
+```text
+Selección comercial
+As,prov ≥ As,req
+6 Φ 1/2" → As,prov = 7.620 cm² ≥ 6.720 cm²
+→ 6 Φ 1/2"  (d = 42.53 cm)
+```
+
+Verificaciones de la sección:
+
+| Verificación | Valor | Límite / criterio | Estado | Referencia | Observación |
+| --- | --- | --- | --- | --- | --- |
+| Acero mínimo | As = 7.620 cm² | As,min = 2.568 cm² | CUMPLE | E.060 10.5.1 |  |
+| Cuantía máxima sísmica | ρ = 0.00717 | ρ ≤ 0.025 | CUMPLE | E.060 21.5.2.2 |  |
+| Límite de armadura simple (ductilidad) | As = 7.620 cm² | As,max = 14.403 cm² | CUMPLE | E.060 10.3.5 / 9.3.2.1 | El límite asegura εt ≥ 0.005 y φ = 0.90. |
+| Control de ductilidad | εt = 0.01212 | εt ≥ 0.004 | CUMPLE | E.060 10.3.5 |  |
+| Factor de reducción φ | φ = 0.900 (εt = 0.01212) | φ = 0.65 + 0.25·(εt − 0.002)/0.003 ≤ 0.90 | CUMPLE | E.060 9.3.2.2 | Sección controlada por tracción (φ = 0.90). |
+| Resistencia a flexión | φMn = 11.217 t·m | Mu = 10.000 t·m | CUMPLE | E.060 9.3.2.1 |  |
+| Separación libre entre barras | s = 5.64 cm | s ≥ máx(Ø; 2.5 cm) = 2.50 cm | CUMPLE | E.060 7.6.1 |  |
+| Número mínimo de barras | 6 barras | ≥ 2 barras | CUMPLE | E.060 21.5.2.1 |  |
+| Colocación en la sección | y = 7.47 cm | y ≤ h/2 = 25.00 cm | CUMPLE | E.060 7.6 / 7.7 |  |
+
+
+#### Detalle: Apoyo derecho (cara) — fibra superior (Mu de diseño = 13.96 t·m)
+
+| Parámetro | Valor | Parámetro | Valor |
+| --- | --- | --- | --- |
+| Ubicación | Apoyo derecho (cara) | Fibra diseñada | superior |
+| Mu (t·m) | 13.963 | d (cm) | 42.62 |
+| As mínimo (cm²) | 2.573 | As máximo (cm²) | 14.434 |
+| Criterio de As máximo | εt = 0.005 (φ = 0.90) | Mu máximo simple (t·m) | 19.547 |
+| As calculado (cm²) | 9.708 | As requerido (cm²) | 9.708 |
+| As colocado (cm²) | 9.900 | Varillas | 5 Φ 5/8" |
+| ¿Doble refuerzo? | No | As' requerido (cm²) | — |
+| As' colocado (cm²) | — | Varillas de compresión | — |
+| a (cm) | 9.318 | c (cm) | 10.962 |
+| εt | 0.00866 | φ | 0.900 |
+| Mn (t·m) | 15.784 | φMn (t·m) | 14.205 |
+| As colocado / requerido | 1.02 | Estado | CUMPLE |
+
+**E.060 10.2.7.3**
+```text
+Factor β1 del bloque rectangular
+β1 = 0.85
+f'c = 210 kgf/cm² ≤ 280 → β1 = 0.85
+→ β1 = 0.8500
+```
+
+**E.060 10.3.2**
+```text
+Cuantía balanceada
+ρb = 0.85·β1·(f'c/fy)·[0.003/(0.003 + fy/Es)]
+ρb = 0.85·0.8500·(210/4200)·[0.003/(0.003 + 4200/2000000)]
+→ ρb = 0.02125
+```
+
+**E.060 10.5.1**
+```text
+Acero mínimo a flexión
+As,min = 0.7·√(f'c)/fy · b·d
+As,min = 0.7·√210/4200 · 25.0 · 42.62 = 2.573 cm²
+→ As,min = 2.573 cm²
+```
+
+**E.060 21.5.2.2 / 9.3.2.1**
+```text
+Acero máximo y momento máximo con armadura simple
+As,max = mín(fracción·ρb·b·d; 0.85·f'c·b·a(εt=0.005)/fy; 0.025·b·d)
+As,max = mín(16.981; 14.434; 26.637) = 14.434 cm² (gobierna: εt = 0.005 (φ = 0.90))
+→ a_max = 13.585 cm; Mu,max = φ·As,max·fy·(d − a_max/2)/10⁵ = 19.547 t·m
+```
+
+**E.060 10.2.2**
+```text
+Peralte efectivo
+d = h − y_s
+d = 50.0 − 7.38 = 42.62 cm
+→ d = 42.62 cm (y_s = 7.38 cm: centroide de la armadura traccionada medido desde la cara superior del elemento)
+```
+
+**E.060 10.3.1**
+```text
+Ecuación de flexión simple
+Mu = φ·As·fy·(d − a/2),  a = As·fy/(0.85·f'c·b)
+13.963·10⁵ = 0.90·As·4200·(42.62 − As·4200/(2·0.85·210·25.0))
+→ As = 9.708 cm²  (discriminante = 1.978e+10)
+```
+
+**E.060 10.2.7**
+```text
+Profundidad real del bloque y eje neutro
+a = As·fy/(0.85·f'c·b);  c = a/β1
+a = 9.900·4200/(0.85·210·25.0) = 9.318 cm; c = 10.962 cm
+→ a = 9.318 cm; c = 10.962 cm
+```
+
+**E.060 9.3.2**
+```text
+Deformación y factor φ
+εt = 0.003·(d − c)/c;  φ = f(εt)
+εt = 0.003·(42.62 − 10.962)/10.962 = 0.00866
+→ φ = 0.900
+```
+
+**E.060 10.3.1 / 9.3.2.1**
+```text
+Resistencia nominal y de diseño
+Mn = As·fy·(d − a/2);  φMn = φ·Mn
+Mn = 9.900·4200·(42.62 − 9.318/2)/10⁵
+→ Mn = 15.784 t·m; φMn = 14.205 t·m
+```
+
+**E.060 7.6 / 21.5.2**
+```text
+Selección comercial
+As,prov ≥ As,req
+5 Φ 5/8" → As,prov = 9.900 cm² ≥ 9.708 cm²
+→ 5 Φ 5/8"  (d = 42.62 cm)
+```
+
+Verificaciones de la sección:
+
+| Verificación | Valor | Límite / criterio | Estado | Referencia | Observación |
+| --- | --- | --- | --- | --- | --- |
+| Acero mínimo | As = 9.900 cm² | As,min = 2.573 cm² | CUMPLE | E.060 10.5.1 |  |
+| Cuantía máxima sísmica | ρ = 0.00929 | ρ ≤ 0.025 | CUMPLE | E.060 21.5.2.2 |  |
+| Límite de armadura simple (ductilidad) | As = 9.900 cm² | As,max = 14.434 cm² | CUMPLE | E.060 10.3.5 / 9.3.2.1 | El límite asegura εt ≥ 0.005 y φ = 0.90. |
+| Control de ductilidad | εt = 0.00866 | εt ≥ 0.004 | CUMPLE | E.060 10.3.5 |  |
+| Factor de reducción φ | φ = 0.900 (εt = 0.00866) | φ = 0.65 + 0.25·(εt − 0.002)/0.003 ≤ 0.90 | CUMPLE | E.060 9.3.2.2 | Sección controlada por tracción (φ = 0.90). |
+| Resistencia a flexión | φMn = 14.205 t·m | Mu = 13.963 t·m | CUMPLE | E.060 9.3.2.1 |  |
+| Separación libre entre barras | s = 5.17 cm | s ≥ máx(Ø; 2.5 cm) = 2.50 cm | CUMPLE | E.060 7.6.1 |  |
+| Número mínimo de barras | 5 barras | ≥ 2 barras | CUMPLE | E.060 21.5.2.1 |  |
+| Colocación en la sección | y = 7.38 cm | y ≤ h/2 = 25.00 cm | CUMPLE | E.060 7.6 / 7.7 |  |
+
+
 #### Detalle: Apoyo derecho (cara) — fibra inferior (Mu de diseño = 7.32 t·m) — ampliada por Mn+ ≥ Mn−/2 (E.060 21.5.2.3); Mn ≥ Mn,max/4 (E.060 21.5.2.4); demanda ETABS = 0.00 t·m
 
 | Parámetro | Valor | Parámetro | Valor |
@@ -569,6 +817,14 @@ Acero máximo y momento máximo con armadura simple
 As,max = mín(fracción·ρb·b·d; 0.85·f'c·b·a(εt=0.005)/fy; 0.025·b·d)
 As,max = mín(17.696; 15.041; 27.758) = 15.041 cm² (gobierna: εt = 0.005 (φ = 0.90))
 → a_max = 14.156 cm; Mu,max = φ·As,max·fy·(d − a_max/2)/10⁵ = 21.227 t·m
+```
+
+**E.060 10.2.2**
+```text
+Peralte efectivo
+d = h − y_s
+d = 50.0 − 5.59 = 44.41 cm
+→ d = 44.41 cm (y_s = 5.59 cm: centroide de la armadura traccionada medido desde la cara inferior del elemento)
 ```
 
 **E.060 10.3.1**
@@ -868,22 +1124,22 @@ Se diseñaron las secciones críticas de apoyo y centro, además de las estacion
 | Apoyo derecho (cara) (*) | inferior | 14.60 | 7.42 | 7.92 | 4 Φ 5/8" | No | 15.54 | CUMPLE |
 
 
-#### Detalle: Apoyo derecho (cara) — fibra superior (Mu de diseño = 27.91 t·m)
+#### Detalle: Apoyo izquierdo (cara) — fibra superior (Mu de diseño = 26.99 t·m)
 
 | Parámetro | Valor | Parámetro | Valor |
 | --- | --- | --- | --- |
-| Ubicación | Apoyo derecho (cara) | Fibra diseñada | superior |
-| Mu (t·m) | 27.910 | d (cm) | 53.78 |
+| Ubicación | Apoyo izquierdo (cara) | Fibra diseñada | superior |
+| Mu (t·m) | 26.990 | d (cm) | 53.78 |
 | As mínimo (cm²) | 4.499 | As máximo (cm²) | 29.141 |
 | Criterio de As máximo | εt = 0.005 (φ = 0.90) | Mu máximo simple (t·m) | 49.796 |
-| As calculado (cm²) | 14.953 | As requerido (cm²) | 14.953 |
+| As calculado (cm²) | 14.414 | As requerido (cm²) | 14.414 |
 | As colocado (cm²) | 15.210 | Varillas | 3 Φ 1" |
 | ¿Doble refuerzo? | No | As' requerido (cm²) | — |
 | As' colocado (cm²) | — | Varillas de compresión | — |
 | a (cm) | 8.947 | c (cm) | 10.526 |
 | εt | 0.01233 | φ | 0.900 |
 | Mn (t·m) | 31.496 | φMn (t·m) | 28.347 |
-| As colocado / requerido | 1.02 | Estado | CUMPLE |
+| As colocado / requerido | 1.06 | Estado | CUMPLE |
 
 **E.060 10.2.7.3**
 ```text
@@ -919,18 +1175,18 @@ As,max = mín(34.283; 29.141; 40.333) = 29.141 cm² (gobierna: εt = 0.005 (φ =
 
 **E.060 10.2.2**
 ```text
-Armadura superior
-Mu− produce tracción en la cara superior; d se mide desde el borde superior.
-d = h − r − Øe − Ø/2 = 60.0 − ... = 53.78 cm
-→ d = 53.78 cm
+Peralte efectivo
+d = h − y_s
+d = 60.0 − 6.22 = 53.78 cm
+→ d = 53.78 cm (y_s = 6.22 cm: centroide de la armadura traccionada medido desde la cara superior del elemento)
 ```
 
 **E.060 10.3.1**
 ```text
 Ecuación de flexión simple
 Mu = φ·As·fy·(d − a/2),  a = As·fy/(0.85·f'c·b)
-27.910·10⁵ = 0.90·As·4200·(53.78 − As·4200/(2·0.85·280·30.0))
-→ As = 14.953 cm²  (discriminante = 3.569e+10)
+26.990·10⁵ = 0.90·As·4200·(53.78 − As·4200/(2·0.85·280·30.0))
+→ As = 14.414 cm²  (discriminante = 3.620e+10)
 ```
 
 **E.060 10.2.7**
@@ -961,7 +1217,7 @@ Mn = 15.210·4200·(53.78 − 8.947/2)/10⁵
 ```text
 Selección comercial
 As,prov ≥ As,req
-3 Φ 1" → As,prov = 15.210 cm² ≥ 14.953 cm²
+3 Φ 1" → As,prov = 15.210 cm² ≥ 14.414 cm²
 → 3 Φ 1"  (d = 53.78 cm)
 ```
 
@@ -974,114 +1230,10 @@ Verificaciones de la sección:
 | Límite de armadura simple (ductilidad) | As = 15.210 cm² | As,max = 29.141 cm² | CUMPLE | E.060 10.3.5 / 9.3.2.1 | El límite asegura εt ≥ 0.005 y φ = 0.90. |
 | Control de ductilidad | εt = 0.01233 | εt ≥ 0.004 | CUMPLE | E.060 10.3.5 |  |
 | Factor de reducción φ | φ = 0.900 (εt = 0.01233) | φ = 0.65 + 0.25·(εt − 0.002)/0.003 ≤ 0.90 | CUMPLE | E.060 9.3.2.2 | Sección controlada por tracción (φ = 0.90). |
-| Resistencia a flexión | φMn = 28.347 t·m | Mu = 27.910 t·m | CUMPLE | E.060 9.3.2.1 |  |
+| Resistencia a flexión | φMn = 28.347 t·m | Mu = 26.990 t·m | CUMPLE | E.060 9.3.2.1 |  |
 | Separación libre entre barras | s = 6.24 cm | s ≥ máx(Ø; 2.5 cm) = 2.54 cm | CUMPLE | E.060 7.6.1 |  |
 | Número mínimo de barras | 3 barras | ≥ 2 barras | CUMPLE | E.060 21.5.2.1 |  |
 | Colocación en la sección | y = 6.22 cm | y ≤ h/2 = 30.00 cm | CUMPLE | E.060 7.6 / 7.7 |  |
-
-
-#### Detalle: Centro — fibra inferior (Mu de diseño = 22.00 t·m)
-
-| Parámetro | Valor | Parámetro | Valor |
-| --- | --- | --- | --- |
-| Ubicación | Centro | Fibra diseñada | inferior |
-| Mu (t·m) | 22.000 | d (cm) | 52.53 |
-| As mínimo (cm²) | 4.395 | As máximo (cm²) | 28.463 |
-| Criterio de As máximo | εt = 0.005 (φ = 0.90) | Mu máximo simple (t·m) | 47.508 |
-| As calculado (cm²) | 11.869 | As requerido (cm²) | 11.869 |
-| As colocado (cm²) | 12.700 | Varillas | 10 Φ 1/2" |
-| ¿Doble refuerzo? | No | As' requerido (cm²) | — |
-| As' colocado (cm²) | — | Varillas de compresión | — |
-| a (cm) | 7.471 | c (cm) | 8.789 |
-| εt | 0.01493 | φ | 0.900 |
-| Mn (t·m) | 26.026 | φMn (t·m) | 23.423 |
-| As colocado / requerido | 1.07 | Estado | CUMPLE |
-
-**E.060 10.2.7.3**
-```text
-Factor β1 del bloque rectangular
-β1 = 0.85
-f'c = 280 kgf/cm² ≤ 280 → β1 = 0.85
-→ β1 = 0.8500
-```
-
-**E.060 10.3.2**
-```text
-Cuantía balanceada
-ρb = 0.85·β1·(f'c/fy)·[0.003/(0.003 + fy/Es)]
-ρb = 0.85·0.8500·(280/4200)·[0.003/(0.003 + 4200/2000000)]
-→ ρb = 0.02833
-```
-
-**E.060 10.5.1**
-```text
-Acero mínimo a flexión
-As,min = 0.7·√(f'c)/fy · b·d
-As,min = 0.7·√280/4200 · 30.0 · 52.53 = 4.395 cm²
-→ As,min = 4.395 cm²
-```
-
-**E.060 21.5.2.2 / 9.3.2.1**
-```text
-Acero máximo y momento máximo con armadura simple
-As,max = mín(fracción·ρb·b·d; 0.85·f'c·b·a(εt=0.005)/fy; 0.025·b·d)
-As,max = mín(33.486; 28.463; 39.396) = 28.463 cm² (gobierna: εt = 0.005 (φ = 0.90))
-→ a_max = 16.743 cm; Mu,max = φ·As,max·fy·(d − a_max/2)/10⁵ = 47.508 t·m
-```
-
-**E.060 10.3.1**
-```text
-Ecuación de flexión simple
-Mu = φ·As·fy·(d − a/2),  a = As·fy/(0.85·f'c·b)
-22.000·10⁵ = 0.90·As·4200·(52.53 − As·4200/(2·0.85·280·30.0))
-→ As = 11.869 cm²  (discriminante = 3.659e+10)
-```
-
-**E.060 10.2.7**
-```text
-Profundidad real del bloque y eje neutro
-a = As·fy/(0.85·f'c·b);  c = a/β1
-a = 12.700·4200/(0.85·280·30.0) = 7.471 cm; c = 8.789 cm
-→ a = 7.471 cm; c = 8.789 cm
-```
-
-**E.060 9.3.2**
-```text
-Deformación y factor φ
-εt = 0.003·(d − c)/c;  φ = f(εt)
-εt = 0.003·(52.53 − 8.789)/8.789 = 0.01493
-→ φ = 0.900
-```
-
-**E.060 10.3.1 / 9.3.2.1**
-```text
-Resistencia nominal y de diseño
-Mn = As·fy·(d − a/2);  φMn = φ·Mn
-Mn = 12.700·4200·(52.53 − 7.471/2)/10⁵
-→ Mn = 26.026 t·m; φMn = 23.423 t·m
-```
-
-**E.060 7.6 / 21.5.2**
-```text
-Selección comercial
-As,prov ≥ As,req
-10 Φ 1/2" → As,prov = 12.700 cm² ≥ 11.869 cm²
-→ 10 Φ 1/2"  (d = 52.53 cm)
-```
-
-Verificaciones de la sección:
-
-| Verificación | Valor | Límite / criterio | Estado | Referencia | Observación |
-| --- | --- | --- | --- | --- | --- |
-| Acero mínimo | As = 12.700 cm² | As,min = 4.395 cm² | CUMPLE | E.060 10.5.1 |  |
-| Cuantía máxima sísmica | ρ = 0.00806 | ρ ≤ 0.025 | CUMPLE | E.060 21.5.2.2 |  |
-| Límite de armadura simple (ductilidad) | As = 12.700 cm² | As,max = 28.463 cm² | CUMPLE | E.060 10.3.5 / 9.3.2.1 | El límite asegura εt ≥ 0.005 y φ = 0.90. |
-| Control de ductilidad | εt = 0.01493 | εt ≥ 0.004 | CUMPLE | E.060 10.3.5 |  |
-| Factor de reducción φ | φ = 0.900 (εt = 0.01493) | φ = 0.65 + 0.25·(εt − 0.002)/0.003 ≤ 0.90 | CUMPLE | E.060 9.3.2.2 | Sección controlada por tracción (φ = 0.90). |
-| Resistencia a flexión | φMn = 23.423 t·m | Mu = 22.000 t·m | CUMPLE | E.060 9.3.2.1 |  |
-| Separación libre entre barras | s = 3.44 cm | s ≥ máx(Ø; 2.5 cm) = 2.50 cm | CUMPLE | E.060 7.6.1 |  |
-| Número mínimo de barras | 10 barras | ≥ 2 barras | CUMPLE | E.060 21.5.2.1 |  |
-| Colocación en la sección | y = 7.47 cm | y ≤ h/2 = 30.00 cm | CUMPLE | E.060 7.6 / 7.7 |  |
 
 
 #### Detalle: Apoyo izquierdo (cara) — fibra inferior (Mu de diseño = 14.60 t·m) — ampliada por Mn+ ≥ Mn−/2 (E.060 21.5.2.3); Mn ≥ Mn,max/4 (E.060 21.5.2.4); demanda ETABS = 0.00 t·m
@@ -1132,6 +1284,14 @@ Acero máximo y momento máximo con armadura simple
 As,max = mín(fracción·ρb·b·d; 0.85·f'c·b·a(εt=0.005)/fy; 0.025·b·d)
 As,max = mín(34.587; 29.399; 40.690) = 29.399 cm² (gobierna: εt = 0.005 (φ = 0.90))
 → a_max = 17.293 cm; Mu,max = φ·As,max·fy·(d − a_max/2)/10⁵ = 50.682 t·m
+```
+
+**E.060 10.2.2**
+```text
+Peralte efectivo
+d = h − y_s
+d = 60.0 − 5.75 = 54.25 cm
+→ d = 54.25 cm (y_s = 5.75 cm: centroide de la armadura traccionada medido desde la cara inferior del elemento)
 ```
 
 **E.060 10.3.1**
@@ -1189,6 +1349,350 @@ Verificaciones de la sección:
 | Colocación en la sección | y = 5.75 cm | y ≤ h/2 = 30.00 cm | CUMPLE | E.060 7.6 / 7.7 |  |
 
 
+#### Detalle: Centro — fibra superior (Mu de diseño = 0.00 t·m)
+
+| Parámetro | Valor | Parámetro | Valor |
+| --- | --- | --- | --- |
+| Ubicación | Centro | Fibra diseñada | superior |
+| Mu (t·m) | 0.000 | d (cm) | 54.41 |
+| As mínimo (cm²) | 4.552 | As máximo (cm²) | 29.485 |
+| Criterio de As máximo | εt = 0.005 (φ = 0.90) | Mu máximo simple (t·m) | 50.979 |
+| As calculado (cm²) | 0.000 | As requerido (cm²) | 4.552 |
+| As colocado (cm²) | 5.080 | Varillas | 4 Φ 1/2" |
+| ¿Doble refuerzo? | No | As' requerido (cm²) | — |
+| As' colocado (cm²) | — | Varillas de compresión | — |
+| a (cm) | 2.988 | c (cm) | 3.516 |
+| εt | 0.04343 | φ | 0.900 |
+| Mn (t·m) | 11.291 | φMn (t·m) | 10.162 |
+| As colocado / requerido | 1.12 | Estado | CUMPLE |
+
+**E.060 10.2.7.3**
+```text
+Factor β1 del bloque rectangular
+β1 = 0.85
+f'c = 280 kgf/cm² ≤ 280 → β1 = 0.85
+→ β1 = 0.8500
+```
+
+**E.060 10.3.2**
+```text
+Cuantía balanceada
+ρb = 0.85·β1·(f'c/fy)·[0.003/(0.003 + fy/Es)]
+ρb = 0.85·0.8500·(280/4200)·[0.003/(0.003 + 4200/2000000)]
+→ ρb = 0.02833
+```
+
+**E.060 10.5.1**
+```text
+Acero mínimo a flexión
+As,min = 0.7·√(f'c)/fy · b·d
+As,min = 0.7·√280/4200 · 30.0 · 54.41 = 4.552 cm²
+→ As,min = 4.552 cm²
+```
+
+**E.060 21.5.2.2 / 9.3.2.1**
+```text
+Acero máximo y momento máximo con armadura simple
+As,max = mín(fracción·ρb·b·d; 0.85·f'c·b·a(εt=0.005)/fy; 0.025·b·d)
+As,max = mín(34.688; 29.485; 40.809) = 29.485 cm² (gobierna: εt = 0.005 (φ = 0.90))
+→ a_max = 17.344 cm; Mu,max = φ·As,max·fy·(d − a_max/2)/10⁵ = 50.979 t·m
+```
+
+**E.060 10.2.2**
+```text
+Peralte efectivo
+d = h − y_s
+d = 60.0 − 5.59 = 54.41 cm
+→ d = 54.41 cm (y_s = 5.59 cm: centroide de la armadura traccionada medido desde la cara superior del elemento)
+```
+
+**E.060 10.3.1**
+```text
+Ecuación de flexión simple
+Mu = φ·As·fy·(d − a/2),  a = As·fy/(0.85·f'c·b)
+0.000·10⁵ = 0.90·As·4200·(54.41 − As·4200/(2·0.85·280·30.0))
+→ As = 0.000 cm²  (discriminante = 5.223e+10)
+```
+
+**E.060 10.5.1**
+```text
+Gobierna el acero mínimo
+As,req = máx(As,calculado; As,min)
+As,req = máx(0.000; 4.552)
+→ As,req = 4.552 cm²
+```
+
+**E.060 10.2.7**
+```text
+Profundidad real del bloque y eje neutro
+a = As·fy/(0.85·f'c·b);  c = a/β1
+a = 5.080·4200/(0.85·280·30.0) = 2.988 cm; c = 3.516 cm
+→ a = 2.988 cm; c = 3.516 cm
+```
+
+**E.060 9.3.2**
+```text
+Deformación y factor φ
+εt = 0.003·(d − c)/c;  φ = f(εt)
+εt = 0.003·(54.41 − 3.516)/3.516 = 0.04343
+→ φ = 0.900
+```
+
+**E.060 10.3.1 / 9.3.2.1**
+```text
+Resistencia nominal y de diseño
+Mn = As·fy·(d − a/2);  φMn = φ·Mn
+Mn = 5.080·4200·(54.41 − 2.988/2)/10⁵
+→ Mn = 11.291 t·m; φMn = 10.162 t·m
+```
+
+**E.060 7.6 / 21.5.2**
+```text
+Selección comercial
+As,prov ≥ As,req
+4 Φ 1/2" → As,prov = 5.080 cm² ≥ 4.552 cm²
+→ 4 Φ 1/2"  (d = 54.41 cm)
+```
+
+Verificaciones de la sección:
+
+| Verificación | Valor | Límite / criterio | Estado | Referencia | Observación |
+| --- | --- | --- | --- | --- | --- |
+| Acero mínimo | As = 5.080 cm² | As,min = 4.552 cm² | CUMPLE | E.060 10.5.1 |  |
+| Cuantía máxima sísmica | ρ = 0.00311 | ρ ≤ 0.025 | CUMPLE | E.060 21.5.2.2 |  |
+| Límite de armadura simple (ductilidad) | As = 5.080 cm² | As,max = 29.485 cm² | CUMPLE | E.060 10.3.5 / 9.3.2.1 | El límite asegura εt ≥ 0.005 y φ = 0.90. |
+| Control de ductilidad | εt = 0.04343 | εt ≥ 0.004 | CUMPLE | E.060 10.3.5 |  |
+| Factor de reducción φ | φ = 0.900 (εt = 0.04343) | φ = 0.65 + 0.25·(εt − 0.002)/0.003 ≤ 0.90 | CUMPLE | E.060 9.3.2.2 | Sección controlada por tracción (φ = 0.90). |
+| Resistencia a flexión | φMn = 10.162 t·m | Mu = 0.000 t·m | CUMPLE | E.060 9.3.2.1 |  |
+| Separación libre entre barras | s = 5.00 cm | s ≥ máx(Ø; 2.5 cm) = 2.50 cm | CUMPLE | E.060 7.6.1 |  |
+| Número mínimo de barras | 4 barras | ≥ 2 barras | CUMPLE | E.060 21.5.2.1 |  |
+| Colocación en la sección | y = 5.59 cm | y ≤ h/2 = 30.00 cm | CUMPLE | E.060 7.6 / 7.7 |  |
+
+
+#### Detalle: Centro — fibra inferior (Mu de diseño = 22.00 t·m)
+
+| Parámetro | Valor | Parámetro | Valor |
+| --- | --- | --- | --- |
+| Ubicación | Centro | Fibra diseñada | inferior |
+| Mu (t·m) | 22.000 | d (cm) | 52.53 |
+| As mínimo (cm²) | 4.395 | As máximo (cm²) | 28.463 |
+| Criterio de As máximo | εt = 0.005 (φ = 0.90) | Mu máximo simple (t·m) | 47.508 |
+| As calculado (cm²) | 11.869 | As requerido (cm²) | 11.869 |
+| As colocado (cm²) | 12.700 | Varillas | 10 Φ 1/2" |
+| ¿Doble refuerzo? | No | As' requerido (cm²) | — |
+| As' colocado (cm²) | — | Varillas de compresión | — |
+| a (cm) | 7.471 | c (cm) | 8.789 |
+| εt | 0.01493 | φ | 0.900 |
+| Mn (t·m) | 26.026 | φMn (t·m) | 23.423 |
+| As colocado / requerido | 1.07 | Estado | CUMPLE |
+
+**E.060 10.2.7.3**
+```text
+Factor β1 del bloque rectangular
+β1 = 0.85
+f'c = 280 kgf/cm² ≤ 280 → β1 = 0.85
+→ β1 = 0.8500
+```
+
+**E.060 10.3.2**
+```text
+Cuantía balanceada
+ρb = 0.85·β1·(f'c/fy)·[0.003/(0.003 + fy/Es)]
+ρb = 0.85·0.8500·(280/4200)·[0.003/(0.003 + 4200/2000000)]
+→ ρb = 0.02833
+```
+
+**E.060 10.5.1**
+```text
+Acero mínimo a flexión
+As,min = 0.7·√(f'c)/fy · b·d
+As,min = 0.7·√280/4200 · 30.0 · 52.53 = 4.395 cm²
+→ As,min = 4.395 cm²
+```
+
+**E.060 21.5.2.2 / 9.3.2.1**
+```text
+Acero máximo y momento máximo con armadura simple
+As,max = mín(fracción·ρb·b·d; 0.85·f'c·b·a(εt=0.005)/fy; 0.025·b·d)
+As,max = mín(33.486; 28.463; 39.396) = 28.463 cm² (gobierna: εt = 0.005 (φ = 0.90))
+→ a_max = 16.743 cm; Mu,max = φ·As,max·fy·(d − a_max/2)/10⁵ = 47.508 t·m
+```
+
+**E.060 10.2.2**
+```text
+Peralte efectivo
+d = h − y_s
+d = 60.0 − 7.47 = 52.53 cm
+→ d = 52.53 cm (y_s = 7.47 cm: centroide de la armadura traccionada medido desde la cara inferior del elemento)
+```
+
+**E.060 10.3.1**
+```text
+Ecuación de flexión simple
+Mu = φ·As·fy·(d − a/2),  a = As·fy/(0.85·f'c·b)
+22.000·10⁵ = 0.90·As·4200·(52.53 − As·4200/(2·0.85·280·30.0))
+→ As = 11.869 cm²  (discriminante = 3.659e+10)
+```
+
+**E.060 10.2.7**
+```text
+Profundidad real del bloque y eje neutro
+a = As·fy/(0.85·f'c·b);  c = a/β1
+a = 12.700·4200/(0.85·280·30.0) = 7.471 cm; c = 8.789 cm
+→ a = 7.471 cm; c = 8.789 cm
+```
+
+**E.060 9.3.2**
+```text
+Deformación y factor φ
+εt = 0.003·(d − c)/c;  φ = f(εt)
+εt = 0.003·(52.53 − 8.789)/8.789 = 0.01493
+→ φ = 0.900
+```
+
+**E.060 10.3.1 / 9.3.2.1**
+```text
+Resistencia nominal y de diseño
+Mn = As·fy·(d − a/2);  φMn = φ·Mn
+Mn = 12.700·4200·(52.53 − 7.471/2)/10⁵
+→ Mn = 26.026 t·m; φMn = 23.423 t·m
+```
+
+**E.060 7.6 / 21.5.2**
+```text
+Selección comercial
+As,prov ≥ As,req
+10 Φ 1/2" → As,prov = 12.700 cm² ≥ 11.869 cm²
+→ 10 Φ 1/2"  (d = 52.53 cm)
+```
+
+Verificaciones de la sección:
+
+| Verificación | Valor | Límite / criterio | Estado | Referencia | Observación |
+| --- | --- | --- | --- | --- | --- |
+| Acero mínimo | As = 12.700 cm² | As,min = 4.395 cm² | CUMPLE | E.060 10.5.1 |  |
+| Cuantía máxima sísmica | ρ = 0.00806 | ρ ≤ 0.025 | CUMPLE | E.060 21.5.2.2 |  |
+| Límite de armadura simple (ductilidad) | As = 12.700 cm² | As,max = 28.463 cm² | CUMPLE | E.060 10.3.5 / 9.3.2.1 | El límite asegura εt ≥ 0.005 y φ = 0.90. |
+| Control de ductilidad | εt = 0.01493 | εt ≥ 0.004 | CUMPLE | E.060 10.3.5 |  |
+| Factor de reducción φ | φ = 0.900 (εt = 0.01493) | φ = 0.65 + 0.25·(εt − 0.002)/0.003 ≤ 0.90 | CUMPLE | E.060 9.3.2.2 | Sección controlada por tracción (φ = 0.90). |
+| Resistencia a flexión | φMn = 23.423 t·m | Mu = 22.000 t·m | CUMPLE | E.060 9.3.2.1 |  |
+| Separación libre entre barras | s = 3.44 cm | s ≥ máx(Ø; 2.5 cm) = 2.50 cm | CUMPLE | E.060 7.6.1 |  |
+| Número mínimo de barras | 10 barras | ≥ 2 barras | CUMPLE | E.060 21.5.2.1 |  |
+| Colocación en la sección | y = 7.47 cm | y ≤ h/2 = 30.00 cm | CUMPLE | E.060 7.6 / 7.7 |  |
+
+
+#### Detalle: Apoyo derecho (cara) — fibra superior (Mu de diseño = 27.91 t·m)
+
+| Parámetro | Valor | Parámetro | Valor |
+| --- | --- | --- | --- |
+| Ubicación | Apoyo derecho (cara) | Fibra diseñada | superior |
+| Mu (t·m) | 27.910 | d (cm) | 53.78 |
+| As mínimo (cm²) | 4.499 | As máximo (cm²) | 29.141 |
+| Criterio de As máximo | εt = 0.005 (φ = 0.90) | Mu máximo simple (t·m) | 49.796 |
+| As calculado (cm²) | 14.953 | As requerido (cm²) | 14.953 |
+| As colocado (cm²) | 15.210 | Varillas | 3 Φ 1" |
+| ¿Doble refuerzo? | No | As' requerido (cm²) | — |
+| As' colocado (cm²) | — | Varillas de compresión | — |
+| a (cm) | 8.947 | c (cm) | 10.526 |
+| εt | 0.01233 | φ | 0.900 |
+| Mn (t·m) | 31.496 | φMn (t·m) | 28.347 |
+| As colocado / requerido | 1.02 | Estado | CUMPLE |
+
+**E.060 10.2.7.3**
+```text
+Factor β1 del bloque rectangular
+β1 = 0.85
+f'c = 280 kgf/cm² ≤ 280 → β1 = 0.85
+→ β1 = 0.8500
+```
+
+**E.060 10.3.2**
+```text
+Cuantía balanceada
+ρb = 0.85·β1·(f'c/fy)·[0.003/(0.003 + fy/Es)]
+ρb = 0.85·0.8500·(280/4200)·[0.003/(0.003 + 4200/2000000)]
+→ ρb = 0.02833
+```
+
+**E.060 10.5.1**
+```text
+Acero mínimo a flexión
+As,min = 0.7·√(f'c)/fy · b·d
+As,min = 0.7·√280/4200 · 30.0 · 53.78 = 4.499 cm²
+→ As,min = 4.499 cm²
+```
+
+**E.060 21.5.2.2 / 9.3.2.1**
+```text
+Acero máximo y momento máximo con armadura simple
+As,max = mín(fracción·ρb·b·d; 0.85·f'c·b·a(εt=0.005)/fy; 0.025·b·d)
+As,max = mín(34.283; 29.141; 40.333) = 29.141 cm² (gobierna: εt = 0.005 (φ = 0.90))
+→ a_max = 17.142 cm; Mu,max = φ·As,max·fy·(d − a_max/2)/10⁵ = 49.796 t·m
+```
+
+**E.060 10.2.2**
+```text
+Peralte efectivo
+d = h − y_s
+d = 60.0 − 6.22 = 53.78 cm
+→ d = 53.78 cm (y_s = 6.22 cm: centroide de la armadura traccionada medido desde la cara superior del elemento)
+```
+
+**E.060 10.3.1**
+```text
+Ecuación de flexión simple
+Mu = φ·As·fy·(d − a/2),  a = As·fy/(0.85·f'c·b)
+27.910·10⁵ = 0.90·As·4200·(53.78 − As·4200/(2·0.85·280·30.0))
+→ As = 14.953 cm²  (discriminante = 3.569e+10)
+```
+
+**E.060 10.2.7**
+```text
+Profundidad real del bloque y eje neutro
+a = As·fy/(0.85·f'c·b);  c = a/β1
+a = 15.210·4200/(0.85·280·30.0) = 8.947 cm; c = 10.526 cm
+→ a = 8.947 cm; c = 10.526 cm
+```
+
+**E.060 9.3.2**
+```text
+Deformación y factor φ
+εt = 0.003·(d − c)/c;  φ = f(εt)
+εt = 0.003·(53.78 − 10.526)/10.526 = 0.01233
+→ φ = 0.900
+```
+
+**E.060 10.3.1 / 9.3.2.1**
+```text
+Resistencia nominal y de diseño
+Mn = As·fy·(d − a/2);  φMn = φ·Mn
+Mn = 15.210·4200·(53.78 − 8.947/2)/10⁵
+→ Mn = 31.496 t·m; φMn = 28.347 t·m
+```
+
+**E.060 7.6 / 21.5.2**
+```text
+Selección comercial
+As,prov ≥ As,req
+3 Φ 1" → As,prov = 15.210 cm² ≥ 14.953 cm²
+→ 3 Φ 1"  (d = 53.78 cm)
+```
+
+Verificaciones de la sección:
+
+| Verificación | Valor | Límite / criterio | Estado | Referencia | Observación |
+| --- | --- | --- | --- | --- | --- |
+| Acero mínimo | As = 15.210 cm² | As,min = 4.499 cm² | CUMPLE | E.060 10.5.1 |  |
+| Cuantía máxima sísmica | ρ = 0.00943 | ρ ≤ 0.025 | CUMPLE | E.060 21.5.2.2 |  |
+| Límite de armadura simple (ductilidad) | As = 15.210 cm² | As,max = 29.141 cm² | CUMPLE | E.060 10.3.5 / 9.3.2.1 | El límite asegura εt ≥ 0.005 y φ = 0.90. |
+| Control de ductilidad | εt = 0.01233 | εt ≥ 0.004 | CUMPLE | E.060 10.3.5 |  |
+| Factor de reducción φ | φ = 0.900 (εt = 0.01233) | φ = 0.65 + 0.25·(εt − 0.002)/0.003 ≤ 0.90 | CUMPLE | E.060 9.3.2.2 | Sección controlada por tracción (φ = 0.90). |
+| Resistencia a flexión | φMn = 28.347 t·m | Mu = 27.910 t·m | CUMPLE | E.060 9.3.2.1 |  |
+| Separación libre entre barras | s = 6.24 cm | s ≥ máx(Ø; 2.5 cm) = 2.54 cm | CUMPLE | E.060 7.6.1 |  |
+| Número mínimo de barras | 3 barras | ≥ 2 barras | CUMPLE | E.060 21.5.2.1 |  |
+| Colocación en la sección | y = 6.22 cm | y ≤ h/2 = 30.00 cm | CUMPLE | E.060 7.6 / 7.7 |  |
+
+
 #### Detalle: Apoyo derecho (cara) — fibra inferior (Mu de diseño = 14.60 t·m) — ampliada por Mn+ ≥ Mn−/2 (E.060 21.5.2.3); Mn ≥ Mn,max/4 (E.060 21.5.2.4); demanda ETABS = 0.00 t·m
 
 | Parámetro | Valor | Parámetro | Valor |
@@ -1237,6 +1741,14 @@ Acero máximo y momento máximo con armadura simple
 As,max = mín(fracción·ρb·b·d; 0.85·f'c·b·a(εt=0.005)/fy; 0.025·b·d)
 As,max = mín(34.587; 29.399; 40.690) = 29.399 cm² (gobierna: εt = 0.005 (φ = 0.90))
 → a_max = 17.293 cm; Mu,max = φ·As,max·fy·(d − a_max/2)/10⁵ = 50.682 t·m
+```
+
+**E.060 10.2.2**
+```text
+Peralte efectivo
+d = h − y_s
+d = 60.0 − 5.75 = 54.25 cm
+→ d = 54.25 cm (y_s = 5.75 cm: centroide de la armadura traccionada medido desde la cara inferior del elemento)
 ```
 
 **E.060 10.3.1**
@@ -1536,246 +2048,6 @@ Se diseñaron las secciones críticas de apoyo y centro, además de las estacion
 | Apoyo derecho (cara) (*) | inferior | 11.70 | 7.61 | 7.92 | 4 Φ 5/8" | No | 12.13 | CUMPLE |
 
 
-#### Detalle: Apoyo derecho (cara) — fibra superior (Mu de diseño = 22.02 t·m)
-
-| Parámetro | Valor | Parámetro | Valor |
-| --- | --- | --- | --- |
-| Ubicación | Apoyo derecho (cara) | Fibra diseñada | superior |
-| Mu (t·m) | 22.015 | d (cm) | 41.89 |
-| As mínimo (cm²) | 2.530 | As máximo (cm²) | 14.188 |
-| Criterio de As máximo | εt = 0.005 (φ = 0.90) | Mu máximo simple (t·m) | 18.886 |
-| As calculado (cm²) | 16.366 | As requerido (cm²) | 16.366 |
-| As colocado (cm²) | 17.100 | Varillas | 6 Φ 3/4" |
-| ¿Doble refuerzo? | Sí | As' requerido (cm²) | 2.312 |
-| As' colocado (cm²) | 2.540 | Varillas de compresión | 2 Φ 1/2" |
-| a (cm) | 13.850 | c (cm) | 16.294 |
-| εt | 0.00471 | φ | 0.876 |
-| Mn (t·m) | 25.248 | φMn (t·m) | 22.119 |
-| As colocado / requerido | 1.04 | Estado | CUMPLE |
-
-**E.060 10.2.7.3**
-```text
-Factor β1 del bloque rectangular
-β1 = 0.85
-f'c = 210 kgf/cm² ≤ 280 → β1 = 0.85
-→ β1 = 0.8500
-```
-
-**E.060 10.3.2**
-```text
-Cuantía balanceada
-ρb = 0.85·β1·(f'c/fy)·[0.003/(0.003 + fy/Es)]
-ρb = 0.85·0.8500·(210/4200)·[0.003/(0.003 + 4200/2000000)]
-→ ρb = 0.02125
-```
-
-**E.060 10.5.1**
-```text
-Acero mínimo a flexión
-As,min = 0.7·√(f'c)/fy · b·d
-As,min = 0.7·√210/4200 · 25.0 · 41.89 = 2.530 cm²
-→ As,min = 2.530 cm²
-```
-
-**E.060 21.5.2.2 / 9.3.2.1**
-```text
-Acero máximo y momento máximo con armadura simple
-As,max = mín(fracción·ρb·b·d; 0.85·f'c·b·a(εt=0.005)/fy; 0.025·b·d)
-As,max = mín(16.692; 14.188; 26.183) = 14.188 cm² (gobierna: εt = 0.005 (φ = 0.90))
-→ a_max = 13.353 cm; Mu,max = φ·As,max·fy·(d − a_max/2)/10⁵ = 18.886 t·m
-```
-
-**E.060 10.2.2**
-```text
-Armadura superior
-Mu− produce tracción en la cara superior; d se mide desde el borde superior.
-d = h − r − Øe − Ø/2 = 50.0 − ... = 41.89 cm
-→ d = 41.89 cm
-```
-
-**E.060 9.3.2.1 / 10.2.7**
-```text
-Profundidad del eje neutro para φ = 0.90
-c = 0.375·d;  a = β1·c
-c = 0.375·41.89 = 15.71 cm; a = 0.850·15.71 = 13.35 cm
-→ c = 15.71 cm; a = 13.35 cm
-```
-
-**E.060 10.2.7**
-```text
-Fuerza y momento del bloque de concreto
-Cc = 0.85·f'c·b·a;  M1 = Cc·(d − a/2)
-Cc = 0.85·210·25.0·13.35 = 59588.8 kgf; M1 = 59588.8·(41.89 − 13.35/2)
-→ M1 = 20.985 t·m
-```
-
-**E.060 10.3.4**
-```text
-Acero de compresión requerido
-As' = [Mu/φ − Cc·(d − a/2)] / [f's·(d − d')]
-As' = [22.015·10⁵/0.90 − 2098472] / [3745·(41.89 − 5.90)]
-→ As' = 2.312 cm²; f's = 3744.7 kgf/cm²
-```
-
-**E.060 10.3.1**
-```text
-Acero de tracción requerido
-As = (Cc + As'·f's)/fy
-As = (59588.8 + 2.312·3745)/4200
-→ As = 16.366 cm²
-```
-
-**E.060 10.2.7**
-```text
-Profundidad real del bloque y eje neutro
-a = As·fy/(0.85·f'c·b);  c = a/β1
-a = 17.100·4200/(0.85·210·25.0) = 13.850 cm; c = 16.294 cm
-→ a = 13.850 cm; c = 16.294 cm
-```
-
-**E.060 9.3.2**
-```text
-Deformación y factor φ
-εt = 0.003·(d − c)/c;  φ = f(εt)
-εt = 0.003·(41.89 − 16.294)/16.294 = 0.00471
-→ φ = 0.876
-```
-
-**E.060 10.3.1 / 9.3.2.1**
-```text
-Resistencia nominal y de diseño
-Mn = As·fy·(d − a/2);  φMn = φ·Mn
-Mn = 17.100·4200·(41.89 − 13.850/2)/10⁵
-→ Mn = 25.248 t·m; φMn = 22.119 t·m
-```
-
-**E.060 7.6 / 21.5.2**
-```text
-Selección comercial
-As,prov ≥ As,req
-6 Φ 3/4" → As,prov = 17.100 cm² ≥ 16.366 cm²
-→ 6 Φ 3/4"  (d = 41.89 cm)
-```
-
-Verificaciones de la sección:
-
-| Verificación | Valor | Límite / criterio | Estado | Referencia | Observación |
-| --- | --- | --- | --- | --- | --- |
-| Acero mínimo | As = 17.100 cm² | As,min = 2.530 cm² | CUMPLE | E.060 10.5.1 |  |
-| Cuantía máxima sísmica | ρ = 0.01633 | ρ ≤ 0.025 | CUMPLE | E.060 21.5.2.2 |  |
-| Armadura de compresión | As' = 2.540 cm² | As' > 0 y fluye o se evalúa f's | CUMPLE | E.060 10.3.4 / 21.5.2 | f's = 3942.5 kgf/cm² |
-| Control de ductilidad | εt = 0.00471 | εt ≥ 0.004 | CUMPLE | E.060 10.3.5 |  |
-| Factor de reducción φ | φ = 0.876 (εt = 0.00471) | φ = 0.65 + 0.25·(εt − 0.002)/0.003 ≤ 0.90 | CUMPLE | E.060 9.3.2.2 | Sección en transición: φ se redujo según εt; la resistencia se verifica con φMn ≥ Mu. |
-| Resistencia a flexión | φMn = 22.119 t·m | Mu = 22.015 t·m | CUMPLE | E.060 9.3.2.1 |  |
-| Separación libre entre barras | s = 4.69 cm | s ≥ máx(Ø; 2.5 cm) = 2.50 cm | CUMPLE | E.060 7.6.1 |  |
-| Número mínimo de barras | 6 barras | ≥ 2 barras | CUMPLE | E.060 21.5.2.1 |  |
-| Colocación en la sección | y = 8.11 cm | y ≤ h/2 = 25.00 cm | CUMPLE | E.060 7.6 / 7.7 |  |
-
-
-#### Detalle: Centro — fibra inferior (Mu de diseño = 12.00 t·m)
-
-| Parámetro | Valor | Parámetro | Valor |
-| --- | --- | --- | --- |
-| Ubicación | Centro | Fibra diseñada | inferior |
-| Mu (t·m) | 12.000 | d (cm) | 44.25 |
-| As mínimo (cm²) | 2.672 | As máximo (cm²) | 14.988 |
-| Criterio de As máximo | εt = 0.005 (φ = 0.90) | Mu máximo simple (t·m) | 21.075 |
-| As calculado (cm²) | 7.825 | As requerido (cm²) | 7.825 |
-| As colocado (cm²) | 7.920 | Varillas | 4 Φ 5/8" |
-| ¿Doble refuerzo? | No | As' requerido (cm²) | — |
-| As' colocado (cm²) | — | Varillas de compresión | — |
-| a (cm) | 7.454 | c (cm) | 8.770 |
-| εt | 0.01214 | φ | 0.900 |
-| Mn (t·m) | 13.481 | φMn (t·m) | 12.133 |
-| As colocado / requerido | 1.01 | Estado | CUMPLE |
-
-**E.060 10.2.7.3**
-```text
-Factor β1 del bloque rectangular
-β1 = 0.85
-f'c = 210 kgf/cm² ≤ 280 → β1 = 0.85
-→ β1 = 0.8500
-```
-
-**E.060 10.3.2**
-```text
-Cuantía balanceada
-ρb = 0.85·β1·(f'c/fy)·[0.003/(0.003 + fy/Es)]
-ρb = 0.85·0.8500·(210/4200)·[0.003/(0.003 + 4200/2000000)]
-→ ρb = 0.02125
-```
-
-**E.060 10.5.1**
-```text
-Acero mínimo a flexión
-As,min = 0.7·√(f'c)/fy · b·d
-As,min = 0.7·√210/4200 · 25.0 · 44.25 = 2.672 cm²
-→ As,min = 2.672 cm²
-```
-
-**E.060 21.5.2.2 / 9.3.2.1**
-```text
-Acero máximo y momento máximo con armadura simple
-As,max = mín(fracción·ρb·b·d; 0.85·f'c·b·a(εt=0.005)/fy; 0.025·b·d)
-As,max = mín(17.632; 14.988; 27.659) = 14.988 cm² (gobierna: εt = 0.005 (φ = 0.90))
-→ a_max = 14.106 cm; Mu,max = φ·As,max·fy·(d − a_max/2)/10⁵ = 21.075 t·m
-```
-
-**E.060 10.3.1**
-```text
-Ecuación de flexión simple
-Mu = φ·As·fy·(d − a/2),  a = As·fy/(0.85·f'c·b)
-12.000·10⁵ = 0.90·As·4200·(44.25 − As·4200/(2·0.85·210·25.0))
-→ As = 7.825 cm²  (discriminante = 2.400e+10)
-```
-
-**E.060 10.2.7**
-```text
-Profundidad real del bloque y eje neutro
-a = As·fy/(0.85·f'c·b);  c = a/β1
-a = 7.920·4200/(0.85·210·25.0) = 7.454 cm; c = 8.770 cm
-→ a = 7.454 cm; c = 8.770 cm
-```
-
-**E.060 9.3.2**
-```text
-Deformación y factor φ
-εt = 0.003·(d − c)/c;  φ = f(εt)
-εt = 0.003·(44.25 − 8.770)/8.770 = 0.01214
-→ φ = 0.900
-```
-
-**E.060 10.3.1 / 9.3.2.1**
-```text
-Resistencia nominal y de diseño
-Mn = As·fy·(d − a/2);  φMn = φ·Mn
-Mn = 7.920·4200·(44.25 − 7.454/2)/10⁵
-→ Mn = 13.481 t·m; φMn = 12.133 t·m
-```
-
-**E.060 7.6 / 21.5.2**
-```text
-Selección comercial
-As,prov ≥ As,req
-4 Φ 5/8" → As,prov = 7.920 cm² ≥ 7.825 cm²
-→ 4 Φ 5/8"  (d = 44.25 cm)
-```
-
-Verificaciones de la sección:
-
-| Verificación | Valor | Límite / criterio | Estado | Referencia | Observación |
-| --- | --- | --- | --- | --- | --- |
-| Acero mínimo | As = 7.920 cm² | As,min = 2.672 cm² | CUMPLE | E.060 10.5.1 |  |
-| Cuantía máxima sísmica | ρ = 0.00716 | ρ ≤ 0.025 | CUMPLE | E.060 21.5.2.2 |  |
-| Límite de armadura simple (ductilidad) | As = 7.920 cm² | As,max = 14.988 cm² | CUMPLE | E.060 10.3.5 / 9.3.2.1 | El límite asegura εt ≥ 0.005 y φ = 0.90. |
-| Control de ductilidad | εt = 0.01214 | εt ≥ 0.004 | CUMPLE | E.060 10.3.5 |  |
-| Factor de reducción φ | φ = 0.900 (εt = 0.01214) | φ = 0.65 + 0.25·(εt − 0.002)/0.003 ≤ 0.90 | CUMPLE | E.060 9.3.2.2 | Sección controlada por tracción (φ = 0.90). |
-| Resistencia a flexión | φMn = 12.133 t·m | Mu = 12.000 t·m | CUMPLE | E.060 9.3.2.1 |  |
-| Separación libre entre barras | s = 2.92 cm | s ≥ máx(Ø; 2.5 cm) = 2.50 cm | CUMPLE | E.060 7.6.1 |  |
-| Número mínimo de barras | 4 barras | ≥ 2 barras | CUMPLE | E.060 21.5.2.1 |  |
-| Colocación en la sección | y = 5.75 cm | y ≤ h/2 = 25.00 cm | CUMPLE | E.060 7.6 / 7.7 |  |
-
-
 #### Detalle: Apoyo izquierdo (cara) — fibra superior (Mu de diseño = 21.14 t·m)
 
 | Parámetro | Valor | Parámetro | Valor |
@@ -1827,10 +2099,10 @@ As,max = mín(17.443; 14.826; 27.361) = 14.826 cm² (gobierna: εt = 0.005 (φ =
 
 **E.060 10.2.2**
 ```text
-Armadura superior
-Mu− produce tracción en la cara superior; d se mide desde el borde superior.
-d = h − r − Øe − Ø/2 = 50.0 − ... = 43.78 cm
-→ d = 43.78 cm
+Peralte efectivo
+d = h − y_s
+d = 50.0 − 6.22 = 43.78 cm
+→ d = 43.78 cm (y_s = 6.22 cm: centroide de la armadura traccionada medido desde la cara superior del elemento)
 ```
 
 **E.060 9.3.2.1 / 10.2.7**
@@ -1962,6 +2234,14 @@ As,max = mín(16.945; 14.403; 26.580) = 14.403 cm² (gobierna: εt = 0.005 (φ =
 → a_max = 13.556 cm; Mu,max = φ·As,max·fy·(d − a_max/2)/10⁵ = 19.463 t·m
 ```
 
+**E.060 10.2.2**
+```text
+Peralte efectivo
+d = h − y_s
+d = 50.0 − 7.47 = 42.53 cm
+→ d = 42.53 cm (y_s = 7.47 cm: centroide de la armadura traccionada medido desde la cara inferior del elemento)
+```
+
 **E.060 10.3.1**
 ```text
 Ecuación de flexión simple
@@ -2017,6 +2297,374 @@ Verificaciones de la sección:
 | Colocación en la sección | y = 7.47 cm | y ≤ h/2 = 25.00 cm | CUMPLE | E.060 7.6 / 7.7 |  |
 
 
+#### Detalle: Centro — fibra superior (Mu de diseño = 0.00 t·m)
+
+| Parámetro | Valor | Parámetro | Valor |
+| --- | --- | --- | --- |
+| Ubicación | Centro | Fibra diseñada | superior |
+| Mu (t·m) | 0.000 | d (cm) | 44.41 |
+| As mínimo (cm²) | 2.682 | As máximo (cm²) | 15.041 |
+| Criterio de As máximo | εt = 0.005 (φ = 0.90) | Mu máximo simple (t·m) | 21.227 |
+| As calculado (cm²) | 0.000 | As requerido (cm²) | 2.682 |
+| As colocado (cm²) | 3.810 | Varillas | 3 Φ 1/2" |
+| ¿Doble refuerzo? | No | As' requerido (cm²) | — |
+| As' colocado (cm²) | — | Varillas de compresión | — |
+| a (cm) | 3.586 | c (cm) | 4.219 |
+| εt | 0.02858 | φ | 0.900 |
+| Mn (t·m) | 6.820 | φMn (t·m) | 6.138 |
+| As colocado / requerido | 1.42 | Estado | CUMPLE |
+
+**E.060 10.2.7.3**
+```text
+Factor β1 del bloque rectangular
+β1 = 0.85
+f'c = 210 kgf/cm² ≤ 280 → β1 = 0.85
+→ β1 = 0.8500
+```
+
+**E.060 10.3.2**
+```text
+Cuantía balanceada
+ρb = 0.85·β1·(f'c/fy)·[0.003/(0.003 + fy/Es)]
+ρb = 0.85·0.8500·(210/4200)·[0.003/(0.003 + 4200/2000000)]
+→ ρb = 0.02125
+```
+
+**E.060 10.5.1**
+```text
+Acero mínimo a flexión
+As,min = 0.7·√(f'c)/fy · b·d
+As,min = 0.7·√210/4200 · 25.0 · 44.41 = 2.682 cm²
+→ As,min = 2.682 cm²
+```
+
+**E.060 21.5.2.2 / 9.3.2.1**
+```text
+Acero máximo y momento máximo con armadura simple
+As,max = mín(fracción·ρb·b·d; 0.85·f'c·b·a(εt=0.005)/fy; 0.025·b·d)
+As,max = mín(17.696; 15.041; 27.758) = 15.041 cm² (gobierna: εt = 0.005 (φ = 0.90))
+→ a_max = 14.156 cm; Mu,max = φ·As,max·fy·(d − a_max/2)/10⁵ = 21.227 t·m
+```
+
+**E.060 10.2.2**
+```text
+Peralte efectivo
+d = h − y_s
+d = 50.0 − 5.59 = 44.41 cm
+→ d = 44.41 cm (y_s = 5.59 cm: centroide de la armadura traccionada medido desde la cara superior del elemento)
+```
+
+**E.060 10.3.1**
+```text
+Ecuación de flexión simple
+Mu = φ·As·fy·(d − a/2),  a = As·fy/(0.85·f'c·b)
+0.000·10⁵ = 0.90·As·4200·(44.41 − As·4200/(2·0.85·210·25.0))
+→ As = 0.000 cm²  (discriminante = 3.479e+10)
+```
+
+**E.060 10.5.1**
+```text
+Gobierna el acero mínimo
+As,req = máx(As,calculado; As,min)
+As,req = máx(0.000; 2.682)
+→ As,req = 2.682 cm²
+```
+
+**E.060 10.2.7**
+```text
+Profundidad real del bloque y eje neutro
+a = As·fy/(0.85·f'c·b);  c = a/β1
+a = 3.810·4200/(0.85·210·25.0) = 3.586 cm; c = 4.219 cm
+→ a = 3.586 cm; c = 4.219 cm
+```
+
+**E.060 9.3.2**
+```text
+Deformación y factor φ
+εt = 0.003·(d − c)/c;  φ = f(εt)
+εt = 0.003·(44.41 − 4.219)/4.219 = 0.02858
+→ φ = 0.900
+```
+
+**E.060 10.3.1 / 9.3.2.1**
+```text
+Resistencia nominal y de diseño
+Mn = As·fy·(d − a/2);  φMn = φ·Mn
+Mn = 3.810·4200·(44.41 − 3.586/2)/10⁵
+→ Mn = 6.820 t·m; φMn = 6.138 t·m
+```
+
+**E.060 7.6 / 21.5.2**
+```text
+Selección comercial
+As,prov ≥ As,req
+3 Φ 1/2" → As,prov = 3.810 cm² ≥ 2.682 cm²
+→ 3 Φ 1/2"  (d = 44.41 cm)
+```
+
+Verificaciones de la sección:
+
+| Verificación | Valor | Límite / criterio | Estado | Referencia | Observación |
+| --- | --- | --- | --- | --- | --- |
+| Acero mínimo | As = 3.810 cm² | As,min = 2.682 cm² | CUMPLE | E.060 10.5.1 |  |
+| Cuantía máxima sísmica | ρ = 0.00343 | ρ ≤ 0.025 | CUMPLE | E.060 21.5.2.2 |  |
+| Límite de armadura simple (ductilidad) | As = 3.810 cm² | As,max = 15.041 cm² | CUMPLE | E.060 10.3.5 / 9.3.2.1 | El límite asegura εt ≥ 0.005 y φ = 0.90. |
+| Control de ductilidad | εt = 0.02858 | εt ≥ 0.004 | CUMPLE | E.060 10.3.5 |  |
+| Factor de reducción φ | φ = 0.900 (εt = 0.02858) | φ = 0.65 + 0.25·(εt − 0.002)/0.003 ≤ 0.90 | CUMPLE | E.060 9.3.2.2 | Sección controlada por tracción (φ = 0.90). |
+| Resistencia a flexión | φMn = 6.138 t·m | Mu = 0.000 t·m | CUMPLE | E.060 9.3.2.1 |  |
+| Separación libre entre barras | s = 5.64 cm | s ≥ máx(Ø; 2.5 cm) = 2.50 cm | CUMPLE | E.060 7.6.1 |  |
+| Número mínimo de barras | 3 barras | ≥ 2 barras | CUMPLE | E.060 21.5.2.1 |  |
+| Colocación en la sección | y = 5.59 cm | y ≤ h/2 = 25.00 cm | CUMPLE | E.060 7.6 / 7.7 |  |
+
+
+#### Detalle: Centro — fibra inferior (Mu de diseño = 12.00 t·m)
+
+| Parámetro | Valor | Parámetro | Valor |
+| --- | --- | --- | --- |
+| Ubicación | Centro | Fibra diseñada | inferior |
+| Mu (t·m) | 12.000 | d (cm) | 44.25 |
+| As mínimo (cm²) | 2.672 | As máximo (cm²) | 14.988 |
+| Criterio de As máximo | εt = 0.005 (φ = 0.90) | Mu máximo simple (t·m) | 21.075 |
+| As calculado (cm²) | 7.825 | As requerido (cm²) | 7.825 |
+| As colocado (cm²) | 7.920 | Varillas | 4 Φ 5/8" |
+| ¿Doble refuerzo? | No | As' requerido (cm²) | — |
+| As' colocado (cm²) | — | Varillas de compresión | — |
+| a (cm) | 7.454 | c (cm) | 8.770 |
+| εt | 0.01214 | φ | 0.900 |
+| Mn (t·m) | 13.481 | φMn (t·m) | 12.133 |
+| As colocado / requerido | 1.01 | Estado | CUMPLE |
+
+**E.060 10.2.7.3**
+```text
+Factor β1 del bloque rectangular
+β1 = 0.85
+f'c = 210 kgf/cm² ≤ 280 → β1 = 0.85
+→ β1 = 0.8500
+```
+
+**E.060 10.3.2**
+```text
+Cuantía balanceada
+ρb = 0.85·β1·(f'c/fy)·[0.003/(0.003 + fy/Es)]
+ρb = 0.85·0.8500·(210/4200)·[0.003/(0.003 + 4200/2000000)]
+→ ρb = 0.02125
+```
+
+**E.060 10.5.1**
+```text
+Acero mínimo a flexión
+As,min = 0.7·√(f'c)/fy · b·d
+As,min = 0.7·√210/4200 · 25.0 · 44.25 = 2.672 cm²
+→ As,min = 2.672 cm²
+```
+
+**E.060 21.5.2.2 / 9.3.2.1**
+```text
+Acero máximo y momento máximo con armadura simple
+As,max = mín(fracción·ρb·b·d; 0.85·f'c·b·a(εt=0.005)/fy; 0.025·b·d)
+As,max = mín(17.632; 14.988; 27.659) = 14.988 cm² (gobierna: εt = 0.005 (φ = 0.90))
+→ a_max = 14.106 cm; Mu,max = φ·As,max·fy·(d − a_max/2)/10⁵ = 21.075 t·m
+```
+
+**E.060 10.2.2**
+```text
+Peralte efectivo
+d = h − y_s
+d = 50.0 − 5.75 = 44.25 cm
+→ d = 44.25 cm (y_s = 5.75 cm: centroide de la armadura traccionada medido desde la cara inferior del elemento)
+```
+
+**E.060 10.3.1**
+```text
+Ecuación de flexión simple
+Mu = φ·As·fy·(d − a/2),  a = As·fy/(0.85·f'c·b)
+12.000·10⁵ = 0.90·As·4200·(44.25 − As·4200/(2·0.85·210·25.0))
+→ As = 7.825 cm²  (discriminante = 2.400e+10)
+```
+
+**E.060 10.2.7**
+```text
+Profundidad real del bloque y eje neutro
+a = As·fy/(0.85·f'c·b);  c = a/β1
+a = 7.920·4200/(0.85·210·25.0) = 7.454 cm; c = 8.770 cm
+→ a = 7.454 cm; c = 8.770 cm
+```
+
+**E.060 9.3.2**
+```text
+Deformación y factor φ
+εt = 0.003·(d − c)/c;  φ = f(εt)
+εt = 0.003·(44.25 − 8.770)/8.770 = 0.01214
+→ φ = 0.900
+```
+
+**E.060 10.3.1 / 9.3.2.1**
+```text
+Resistencia nominal y de diseño
+Mn = As·fy·(d − a/2);  φMn = φ·Mn
+Mn = 7.920·4200·(44.25 − 7.454/2)/10⁵
+→ Mn = 13.481 t·m; φMn = 12.133 t·m
+```
+
+**E.060 7.6 / 21.5.2**
+```text
+Selección comercial
+As,prov ≥ As,req
+4 Φ 5/8" → As,prov = 7.920 cm² ≥ 7.825 cm²
+→ 4 Φ 5/8"  (d = 44.25 cm)
+```
+
+Verificaciones de la sección:
+
+| Verificación | Valor | Límite / criterio | Estado | Referencia | Observación |
+| --- | --- | --- | --- | --- | --- |
+| Acero mínimo | As = 7.920 cm² | As,min = 2.672 cm² | CUMPLE | E.060 10.5.1 |  |
+| Cuantía máxima sísmica | ρ = 0.00716 | ρ ≤ 0.025 | CUMPLE | E.060 21.5.2.2 |  |
+| Límite de armadura simple (ductilidad) | As = 7.920 cm² | As,max = 14.988 cm² | CUMPLE | E.060 10.3.5 / 9.3.2.1 | El límite asegura εt ≥ 0.005 y φ = 0.90. |
+| Control de ductilidad | εt = 0.01214 | εt ≥ 0.004 | CUMPLE | E.060 10.3.5 |  |
+| Factor de reducción φ | φ = 0.900 (εt = 0.01214) | φ = 0.65 + 0.25·(εt − 0.002)/0.003 ≤ 0.90 | CUMPLE | E.060 9.3.2.2 | Sección controlada por tracción (φ = 0.90). |
+| Resistencia a flexión | φMn = 12.133 t·m | Mu = 12.000 t·m | CUMPLE | E.060 9.3.2.1 |  |
+| Separación libre entre barras | s = 2.92 cm | s ≥ máx(Ø; 2.5 cm) = 2.50 cm | CUMPLE | E.060 7.6.1 |  |
+| Número mínimo de barras | 4 barras | ≥ 2 barras | CUMPLE | E.060 21.5.2.1 |  |
+| Colocación en la sección | y = 5.75 cm | y ≤ h/2 = 25.00 cm | CUMPLE | E.060 7.6 / 7.7 |  |
+
+
+#### Detalle: Apoyo derecho (cara) — fibra superior (Mu de diseño = 22.02 t·m)
+
+| Parámetro | Valor | Parámetro | Valor |
+| --- | --- | --- | --- |
+| Ubicación | Apoyo derecho (cara) | Fibra diseñada | superior |
+| Mu (t·m) | 22.015 | d (cm) | 41.89 |
+| As mínimo (cm²) | 2.530 | As máximo (cm²) | 14.188 |
+| Criterio de As máximo | εt = 0.005 (φ = 0.90) | Mu máximo simple (t·m) | 18.886 |
+| As calculado (cm²) | 16.366 | As requerido (cm²) | 16.366 |
+| As colocado (cm²) | 17.100 | Varillas | 6 Φ 3/4" |
+| ¿Doble refuerzo? | Sí | As' requerido (cm²) | 2.312 |
+| As' colocado (cm²) | 2.540 | Varillas de compresión | 2 Φ 1/2" |
+| a (cm) | 13.850 | c (cm) | 16.294 |
+| εt | 0.00471 | φ | 0.876 |
+| Mn (t·m) | 25.248 | φMn (t·m) | 22.119 |
+| As colocado / requerido | 1.04 | Estado | CUMPLE |
+
+**E.060 10.2.7.3**
+```text
+Factor β1 del bloque rectangular
+β1 = 0.85
+f'c = 210 kgf/cm² ≤ 280 → β1 = 0.85
+→ β1 = 0.8500
+```
+
+**E.060 10.3.2**
+```text
+Cuantía balanceada
+ρb = 0.85·β1·(f'c/fy)·[0.003/(0.003 + fy/Es)]
+ρb = 0.85·0.8500·(210/4200)·[0.003/(0.003 + 4200/2000000)]
+→ ρb = 0.02125
+```
+
+**E.060 10.5.1**
+```text
+Acero mínimo a flexión
+As,min = 0.7·√(f'c)/fy · b·d
+As,min = 0.7·√210/4200 · 25.0 · 41.89 = 2.530 cm²
+→ As,min = 2.530 cm²
+```
+
+**E.060 21.5.2.2 / 9.3.2.1**
+```text
+Acero máximo y momento máximo con armadura simple
+As,max = mín(fracción·ρb·b·d; 0.85·f'c·b·a(εt=0.005)/fy; 0.025·b·d)
+As,max = mín(16.692; 14.188; 26.183) = 14.188 cm² (gobierna: εt = 0.005 (φ = 0.90))
+→ a_max = 13.353 cm; Mu,max = φ·As,max·fy·(d − a_max/2)/10⁵ = 18.886 t·m
+```
+
+**E.060 10.2.2**
+```text
+Peralte efectivo
+d = h − y_s
+d = 50.0 − 8.11 = 41.89 cm
+→ d = 41.89 cm (y_s = 8.11 cm: centroide de la armadura traccionada medido desde la cara superior del elemento)
+```
+
+**E.060 9.3.2.1 / 10.2.7**
+```text
+Profundidad del eje neutro para φ = 0.90
+c = 0.375·d;  a = β1·c
+c = 0.375·41.89 = 15.71 cm; a = 0.850·15.71 = 13.35 cm
+→ c = 15.71 cm; a = 13.35 cm
+```
+
+**E.060 10.2.7**
+```text
+Fuerza y momento del bloque de concreto
+Cc = 0.85·f'c·b·a;  M1 = Cc·(d − a/2)
+Cc = 0.85·210·25.0·13.35 = 59588.8 kgf; M1 = 59588.8·(41.89 − 13.35/2)
+→ M1 = 20.985 t·m
+```
+
+**E.060 10.3.4**
+```text
+Acero de compresión requerido
+As' = [Mu/φ − Cc·(d − a/2)] / [f's·(d − d')]
+As' = [22.015·10⁵/0.90 − 2098472] / [3745·(41.89 − 5.90)]
+→ As' = 2.312 cm²; f's = 3744.7 kgf/cm²
+```
+
+**E.060 10.3.1**
+```text
+Acero de tracción requerido
+As = (Cc + As'·f's)/fy
+As = (59588.8 + 2.312·3745)/4200
+→ As = 16.366 cm²
+```
+
+**E.060 10.2.7**
+```text
+Profundidad real del bloque y eje neutro
+a = As·fy/(0.85·f'c·b);  c = a/β1
+a = 17.100·4200/(0.85·210·25.0) = 13.850 cm; c = 16.294 cm
+→ a = 13.850 cm; c = 16.294 cm
+```
+
+**E.060 9.3.2**
+```text
+Deformación y factor φ
+εt = 0.003·(d − c)/c;  φ = f(εt)
+εt = 0.003·(41.89 − 16.294)/16.294 = 0.00471
+→ φ = 0.876
+```
+
+**E.060 10.3.1 / 9.3.2.1**
+```text
+Resistencia nominal y de diseño
+Mn = As·fy·(d − a/2);  φMn = φ·Mn
+Mn = 17.100·4200·(41.89 − 13.850/2)/10⁵
+→ Mn = 25.248 t·m; φMn = 22.119 t·m
+```
+
+**E.060 7.6 / 21.5.2**
+```text
+Selección comercial
+As,prov ≥ As,req
+6 Φ 3/4" → As,prov = 17.100 cm² ≥ 16.366 cm²
+→ 6 Φ 3/4"  (d = 41.89 cm)
+```
+
+Verificaciones de la sección:
+
+| Verificación | Valor | Límite / criterio | Estado | Referencia | Observación |
+| --- | --- | --- | --- | --- | --- |
+| Acero mínimo | As = 17.100 cm² | As,min = 2.530 cm² | CUMPLE | E.060 10.5.1 |  |
+| Cuantía máxima sísmica | ρ = 0.01633 | ρ ≤ 0.025 | CUMPLE | E.060 21.5.2.2 |  |
+| Armadura de compresión | As' = 2.540 cm² | As' > 0 y fluye o se evalúa f's | CUMPLE | E.060 10.3.4 / 21.5.2 | f's = 3942.5 kgf/cm² |
+| Control de ductilidad | εt = 0.00471 | εt ≥ 0.004 | CUMPLE | E.060 10.3.5 |  |
+| Factor de reducción φ | φ = 0.876 (εt = 0.00471) | φ = 0.65 + 0.25·(εt − 0.002)/0.003 ≤ 0.90 | CUMPLE | E.060 9.3.2.2 | Sección en transición: φ se redujo según εt; la resistencia se verifica con φMn ≥ Mu. |
+| Resistencia a flexión | φMn = 22.119 t·m | Mu = 22.015 t·m | CUMPLE | E.060 9.3.2.1 |  |
+| Separación libre entre barras | s = 4.69 cm | s ≥ máx(Ø; 2.5 cm) = 2.50 cm | CUMPLE | E.060 7.6.1 |  |
+| Número mínimo de barras | 6 barras | ≥ 2 barras | CUMPLE | E.060 21.5.2.1 |  |
+| Colocación en la sección | y = 8.11 cm | y ≤ h/2 = 25.00 cm | CUMPLE | E.060 7.6 / 7.7 |  |
+
+
 #### Detalle: Apoyo derecho (cara) — fibra inferior (Mu de diseño = 11.70 t·m) — ampliada por Mn+ ≥ Mn−/2 (E.060 21.5.2.3); Mn ≥ Mn,max/4 (E.060 21.5.2.4); demanda ETABS = 0.00 t·m
 
 | Parámetro | Valor | Parámetro | Valor |
@@ -2065,6 +2713,14 @@ Acero máximo y momento máximo con armadura simple
 As,max = mín(fracción·ρb·b·d; 0.85·f'c·b·a(εt=0.005)/fy; 0.025·b·d)
 As,max = mín(17.632; 14.988; 27.659) = 14.988 cm² (gobierna: εt = 0.005 (φ = 0.90))
 → a_max = 14.106 cm; Mu,max = φ·As,max·fy·(d − a_max/2)/10⁵ = 21.075 t·m
+```
+
+**E.060 10.2.2**
+```text
+Peralte efectivo
+d = h − y_s
+d = 50.0 − 5.75 = 44.25 cm
+→ d = 44.25 cm (y_s = 5.75 cm: centroide de la armadura traccionada medido desde la cara inferior del elemento)
 ```
 
 **E.060 10.3.1**
