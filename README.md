@@ -90,6 +90,12 @@ python main.py --listar
 diseñarlas:
 
 ```bash
+python main.py --listar
+```
+
+Para diseñar todas las vigas, o solo algunas:
+
+```bash
 python main.py --seccion VP-25x50 --piso "Piso 2" --formato ambos
 python main.py --vigas V-101,V-102 --proyecto "Edificio A" --salida salidas
 ```
@@ -102,8 +108,10 @@ python main.py \
   --proyecto "Edificio A" --ubicacion "Cusco, Perú"
 ```
 
-Las combinaciones E.060 se generan y se comparan con las del modelo. Si faltan,
-el programa se detiene y muestra el detalle; con `--crear-combos` las crea en
+Las combinaciones E.060 se generan y se comparan con las del modelo. Si alguna
+falta o no coincide exactamente, el programa lo informa con `AVISO`, **no** la
+usa para extraer fuerzas y continúa con las que sí están disponibles; si
+ninguna es utilizable, termina con código 2. Con `--crear-combos` las crea en
 ETABS (el modelo debe estar desbloqueado) y con `--analizar` ejecuta el análisis
 después de crearlas:
 
@@ -262,7 +270,10 @@ más acero, lo aumenta automáticamente y lo reporta como sección ampliada.
 | Estribo mínimo 3/8" (1/2" si db,long > 1") | 21.5.3.2 |
 
 El cortante de diseño es `Vu = máx(Ve + Vg; V_ETABS)` en la cara del apoyo y
-en el centro. El estribado se detalla por tramos:
+en el centro. El espaciamiento se redondea hacia abajo a 1 cm y no baja de
+5 cm (mínimo constructivo): si la demanda exigiera menos, se coloca 5 cm y la
+verificación de resistencia queda en **NO CUMPLE** con su advertencia. El
+estribado se detalla por tramos:
 
 ```text
 1 @ 0.05, 9 @ 0.10 m | Resto: 17 @ 0.21 m | 9 @ 0.10, 1 @ 0.05 m
@@ -338,7 +349,7 @@ La suite incluye:
 - Memoria Markdown y DOCX.
 - Flujo de la CLI, incluido el flujo ETABS simulado.
 
-Resultado esperado: **54 pruebas aprobadas**.
+Resultado esperado: **58 pruebas aprobadas**.
 
 > El `SapModel` simulado está en `tests/conftest.py`. No sustituye una prueba
 > real en ETABS, pero valida el orden de las tuplas, las unidades y el flujo

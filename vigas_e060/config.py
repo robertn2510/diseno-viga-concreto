@@ -55,8 +55,11 @@ class ConfiguracionDiseno:
     revision: str = "A"
 
     def __post_init__(self) -> None:
-        if not 0.0 < self.fraccion_rho_b <= 1.0:
-            raise ValueError("fraccion_rho_b debe estar entre 0 y 1.")
+        if self.fraccion_rho_b not in (0.5, 0.75):
+            raise ValueError(
+                "fraccion_rho_b debe ser 0.50 o 0.75 (criterio clásico "
+                "0.50ρb / 0.75ρb de la E.060)."
+            )
         if self.norma_combinaciones.lower() not in {"usuario", "e060-2009"}:
             raise ValueError("norma_combinaciones debe ser 'usuario' o 'e060-2009'.")
         if self.max_capas not in (1, 2, 3):
