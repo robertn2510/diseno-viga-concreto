@@ -216,3 +216,7 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Salidas del programa de diseño
+salidas/
+*.egg-info/

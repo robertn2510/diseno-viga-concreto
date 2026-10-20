@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "vigas-e060"
+version = "4.0.0"
+description = "Diseño de vigas de concreto armado según la NTE E.060 del Perú a partir de ETABS"
+readme = "README.md"
+requires-python = ">=3.9"
+authors = [{ name = "Ingeniería estructural" }]
+dependencies = ["python-docx>=0.8.11"]
+
+[project.optional-dependencies]
+etabs = [
+    "comtypes>=1.2.0 ; platform_system == 'Windows'",
+    "pywin32>=306 ; platform_system == 'Windows'",
+]
+dev = ["pytest>=8.0"]
+
+[project.scripts]
+vigas-e060 = "vigas_e060.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["vigas_e060*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"

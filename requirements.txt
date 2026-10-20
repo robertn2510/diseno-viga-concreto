@@ -1,0 +1,6 @@
+# Dependencias de ejecución
+python-docx>=0.8.11
+
+# Conexión COM con ETABS (solo Windows).  Basta con UNA de las dos.
+comtypes>=1.2.0 ; platform_system == "Windows"
+# pywin32>=306 ; platform_system == "Windows"   # alternativa a comtypes
