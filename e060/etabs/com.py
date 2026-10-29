@@ -25,18 +25,38 @@ import math
 import os
 import platform
 import sys
+import threading
 import time
 from typing import Dict, List, Optional, Sequence, Tuple
 
-from ..unidades import kgfcm_a_tonfm
+from ..unidades import kgfcm_a_tonfm, sistema_unidades
 from .modelo import Elemento, FuenteETABS, PuntoDemanda
+from .tablas import ETABSTablas, Tabla
 
 # ---------------------------------------------------------------------------
 # Constantes de la API
 # ---------------------------------------------------------------------------
-EUNITS_KGF_M = 8            # eUnits_kgf_m_C
+EUNITS_KGF_M = 8            # eUnits_kgf_m_C (kgf, m, °C)
 ITEM_OBJECT_ELM = 0         # ObjectElm
 ITEM_GROUP_ELM = 1
+
+# eUnits de ETABS -> clave de sistema de unidades del motor
+UNIDADES_POR_ENUM = {
+    1: "lb_in_F", 2: "lb_ft_F", 3: "kip_in_F", 4: "kip_ft_F",
+    5: "kN_mm_C", 6: "kN_m_C", 7: "kgf_mm_C", 8: "kgf_m_C",
+    9: "N_mm_C", 10: "N_m_C", 11: "tonf_mm_C", 12: "tonf_m_C",
+    13: "kN_cm_C", 14: "kgf_cm_C", 15: "N_cm_C", 16: "tonf_cm_C",
+}
+
+# Tablas de la base de datos de ETABS que necesita el motor
+TABLA_FUERZAS = "Element Forces - Frames"
+TABLAS_SECCIONES = ("Frame Assignments - Section Properties",
+                    "Frame Section Properties - Rectangular",
+                    "Frame Section Properties - Concrete Rectangular",
+                    "Frame Properties - Rectangular")
+TABLAS_MATERIALES = ("Material Properties - Concrete Data",
+                     "Material Properties - Basic Mechanical Properties",
+                     "Material List by Object Type")
 
 PROGID_ETABS = "CSI.ETABS.API.ETABSObject"
 PROGID_HELPER = "ETABSv1.Helper"
@@ -160,6 +180,32 @@ def _importar_com():
         raise _mensaje_sin_com() from None
 
 
+def _asegurar_com_en_hilo() -> None:
+    """
+    Inicializa COM en el hilo actual.
+
+    El servidor web atiende cada petición en un hilo nuevo
+    (`ThreadingHTTPServer`) y COM exige `CoInitialize` por hilo; si se omite,
+    la conexión falla con el error 0x800401F0 (CO_E_NOTINITIALIZED).
+    """
+    if not es_windows():
+        return
+    for modulo in ("comtypes", "pythoncom"):
+        try:
+            mod = __import__(modulo)
+        except Exception:
+            continue
+        for funcion in ("CoInitialize", "CoInitializeEx"):
+            inicializar = getattr(mod, funcion, None)
+            if inicializar is None:
+                continue
+            try:
+                inicializar()
+                return
+            except Exception:
+                continue
+
+
 def _desempaquetar(res):
     """Normaliza los retornos (ret, out...) de comtypes/win32com."""
     if isinstance(res, (tuple, list)):
@@ -176,17 +222,73 @@ class ETABSCom(FuenteETABS):
     descripcion = "Conexión directa con ETABS v20–v23 en ejecución"
 
     def __init__(self, adjuntar: bool = True, ruta_etabs: Optional[str] = None,
-                 version: Optional[str] = None):
-        self.SapModel = None
+                 version: Optional[str] = None, solo_seleccionados: bool = False):
         self.EtabsObject = None
         self.version = version or ""
         self._unidades_previas = None
+        self._local = threading.local()
+        self._modelo: Optional[ETABSTablas] = None
+        self._solo_seleccionados = bool(solo_seleccionados)
+        self.clave_unidades = "kgf_m_C"
         self._conectar(adjuntar, ruta_etabs)
+
+    # ------------------------------------------------------------------
+    # Acceso a COM desde varios hilos
+    # ------------------------------------------------------------------
+    @property
+    def SapModel(self):
+        """
+        SapModel válido **para el hilo actual**.
+
+        COM usa apartamentos por hilo: el servidor web atiende cada petición en
+        un hilo distinto, por lo que un `SapModel` obtenido en otro hilo no debe
+        reutilizarse. Si el hilo aún no tiene su propio objeto, se vuelve a
+        enganchar a la misma instancia de ETABS (GetActiveObject) y se fijan las
+        unidades de lectura.
+        """
+        sap = getattr(self._local, "sap", None)
+        if sap is not None:
+            return sap
+        return self._sap_de_hilo()
+
+    @SapModel.setter
+    def SapModel(self, valor):
+        self._local.sap = valor
+
+    def _sap_de_hilo(self):
+        """Engancha el hilo actual a la instancia de ETABS ya abierta."""
+        _asegurar_com_en_hilo()
+        try:
+            obj = self.EtabsObject
+            sap = obj.SapModel if obj is not None else None
+        except Exception:
+            sap = None
+        if sap is None:
+            _, get_active, _create = _importar_com()
+            try:
+                obj = get_active(PROGID_ETABS)
+            except Exception as exc:                 # noqa: BLE001
+                raise ConexionETABSError(
+                    "Se perdió la conexión con ETABS (¿se cerró la aplicación?).\n"
+                    f"Detalle técnico: {exc}",
+                    codigo="etabs_cerrado", sugerencias=[
+                        "Compruebe que ETABS siga abierto con el modelo cargado.",
+                        "Vuelva a conectar desde la interfaz.",
+                    ])
+            self.EtabsObject = obj
+            sap = obj.SapModel
+        self._local.sap = sap
+        try:                              # mismas unidades que en la conexión
+            sap.SetPresentUnits(EUNITS_KGF_M)
+        except Exception:
+            pass
+        return sap
 
     # ------------------------------------------------------------------
     # Conexión
     # ------------------------------------------------------------------
     def _conectar(self, adjuntar: bool, ruta: Optional[str]) -> None:
+        _asegurar_com_en_hilo()
         backend, get_active, create = _importar_com()
         self.backend = backend
         error = None
@@ -197,24 +299,27 @@ class ETABSCom(FuenteETABS):
                 error = exc
         if self.EtabsObject is None:
             if ruta:
+                # ruta explícita: se inicia ETABS a través del Helper de CSI
                 self.EtabsObject = self._lanzar(ruta, create)
             else:
-                try:
-                    self.EtabsObject = create(PROGID_ETABS)
-                except Exception as exc:  # noqa: BLE001
-                    raise ConexionETABSError(
-                        "No se encontró una instancia de ETABS en ejecución.\n"
-                        "Abra ETABS v20–v23 con el modelo cargado y vuelva a "
-                        "intentar; o cargue las tablas exportadas del modelo.\n"
-                        f"Detalle técnico: {error or exc}",
-                        codigo="etabs_cerrado",
-                        sugerencias=[
-                            "Abra ETABS v20, v21, v22 o v23 y cargue el modelo.",
-                            "Si ETABS está abierto, confirme que la licencia "
-                            "esté activa y que el modelo no esté en modo modal.",
-                            "Alternativa sin ETABS: importe las tablas "
-                            "«Element Forces - Frames» exportadas a CSV.",
-                        ]) from exc
+                # No se crea una instancia vacía: el usuario debe abrir el
+                # modelo en ETABS (crear una instancia sin modelo solo abriría
+                # la aplicación en blanco y confundiría el diagnóstico).
+                raise ConexionETABSError(
+                    "No se encontró una instancia de ETABS en ejecución.\n"
+                    "Abra ETABS v20–v23, cargue el modelo y vuelva a intentar; "
+                    "o importe las tablas exportadas del modelo.\n"
+                    f"Detalle técnico: {error}",
+                    codigo="etabs_cerrado",
+                    sugerencias=[
+                        "Abra ETABS v20, v21, v22 o v23 y cargue el modelo.",
+                        "Verifique que la licencia esté activa y que el modelo "
+                        "no esté bloqueado (Unlock Model).",
+                        "Ejecute el análisis (Analyze > Run Analysis) para que "
+                        "existan resultados que leer.",
+                        "Alternativa sin ETABS: importe las tablas "
+                        "«Element Forces - Frames» exportadas a CSV.",
+                    ])
         try:
             self.EtabsObject.ApplicationStart()
         except Exception:                 # ya iniciado
@@ -224,12 +329,21 @@ class ETABSCom(FuenteETABS):
             self.version = self.SapModel.GetVersion()[1]
         except Exception:
             self.version = "desconocida"
+        # Unidades: se fija kgf-m para leer de forma coherente y se recuerda
+        # el sistema previo para restituirlo al cerrar.
         try:
             res = self.SapModel.GetPresentUnits()
-            self._unidades_previas = res[1] if isinstance(res, tuple) else res
-            self.SapModel.SetPresentUnits(EUNITS_KGF_M)
+            valor = res[1] if isinstance(res, tuple) else res
+            self._unidades_previas = int(valor)
         except Exception:
             self._unidades_previas = None
+        try:
+            self.SapModel.SetPresentUnits(EUNITS_KGF_M)
+            self.clave_unidades = "kgf_m_C"
+        except Exception:
+            # si no se pudo fijar, se traduce el sistema en que esté el modelo
+            self.clave_unidades = UNIDADES_POR_ENUM.get(
+                self._unidades_previas or EUNITS_KGF_M, "kgf_m_C")
 
     def _lanzar(self, ruta: str, create):
         """Lanza una nueva instancia de ETABS desde una ruta de instalación."""
@@ -245,15 +359,22 @@ class ETABSCom(FuenteETABS):
             ) from exc
 
     def cerrar(self) -> None:
+        """Restituye las unidades originales del modelo (no cierra ETABS)."""
         try:
-            if self.SapModel is not None and self._unidades_previas:
+            sap = getattr(self._local, "sap", None)
+            if sap is not None and self._unidades_previas:
                 self.SapModel.SetPresentUnits(self._unidades_previas)
         except Exception:
             pass
 
+    @property
+    def unidades(self):
+        return sistema_unidades(self.clave_unidades)
+
     def info_modelo(self) -> dict:
         info = {"fuente": self.nombre, "version": self.version,
-                "unidades": "kgf-m (lectura)", "modelo": ""}
+                "unidades": self.clave_unidades, "modelo": "",
+                "backend": getattr(self, "backend", "")}
         try:
             res = self.SapModel.GetModelFilename()
             if isinstance(res, tuple):
@@ -265,47 +386,212 @@ class ETABSCom(FuenteETABS):
             info["bloqueado"] = bool(res[1]) if isinstance(res, tuple) else bool(res)
         except Exception:
             pass
+        if self._modelo is not None:
+            info["elementos"] = len(self._modelo.listar_elementos())
+            info["combos"] = len(self._modelo.listar_combos())
         return info
 
     # ------------------------------------------------------------------
-    # Elementos
+    # Lectura de la base de datos del modelo
     # ------------------------------------------------------------------
-    def _lista_nombres(self, fn) -> List[str]:
-        res = fn(0, [])
-        ret, salida = _desempaquetar(res)
-        # formatos: (ret, n, names) o (ret, names)
-        for item in salida:
-            if isinstance(item, (list, tuple)) and item and isinstance(item[0], str):
-                return list(item)
-        for item in salida:
-            if isinstance(item, int) and item >= 0:
-                continue
-        return []
-
-    def _nombres_marcos(self) -> List[str]:
+    def _tablas_disponibles(self) -> List[str]:
+        """Nombres de todas las tablas de la base de datos del modelo."""
         try:
-            res = self.SapModel.FrameObj.GetNameList(0, [])
+            res = self.SapModel.DatabaseTables.GetAvailableTables(0, [], [])
         except Exception:
             return []
-        ret, salida = _desempaquetar(res)
+        _, salida = _desempaquetar(res)
         for item in salida:
             if isinstance(item, (list, tuple)):
-                return list(item)
+                return [str(x) for x in item]
         return []
 
-    def _seleccionados(self) -> List[str]:
+    def _tabla_como_datos(self, clave: str):
+        """
+        Devuelve (campos, filas) de una tabla de la base de datos.
+
+        La firma del API ha sido estable desde ETABS v9, pero se prueban
+        variantes por si la versión instalada espera otro número de argumentos.
+        """
+        intentos = (
+            (clave, [], ""),
+            (clave, [], "", "", ),
+            (clave, [], "", True, True),
+        )
+        ultimo = None
+        for extra in intentos:
+            try:
+                res = self.SapModel.DatabaseTables.GetTableForDisplayArray(*extra)
+            except Exception as exc:          # noqa: BLE001
+                ultimo = exc
+                continue
+            campos, filas = self._interpretar_tabla(res)
+            if campos:
+                return campos, filas
+        if ultimo is not None:
+            raise RuntimeError(f"No se pudo leer la tabla {clave!r}: {ultimo}")
+        return [], []
+
+    @staticmethod
+    def _interpretar_tabla(res):
+        """
+        Normaliza la salida de GetTableForDisplayArray:
+
+        (ret, TableVersion, FieldsKeysIncluded[], NumberRecords, TableData[])
+        donde TableData es una lista plana de (NumberRecords × nCampos).
+        """
+        ret, salida = _desempaquetar(res)
+        if ret not in (0, None) and not isinstance(ret, (tuple, list)):
+            # algunos backends devuelven el código de error en el primer elemento
+            pass
+        campos: List[str] = []
+        plano: List[str] = []
+        n_registros = 0
+        for item in salida:
+            if isinstance(item, (list, tuple)):
+                valores = [str(v) for v in item]
+                if not campos and valores and all(not _a_numero(v) for v in valores):
+                    campos = valores
+                elif len(valores) > len(plano):
+                    plano = valores
+            elif isinstance(item, int) and item > 0:
+                n_registros = max(n_registros, item)
+        if not campos or not plano:
+            return [], []
+        ancho = len(campos)
+        if n_registros and n_registros * ancho == len(plano):
+            filas = [plano[i * ancho:(i + 1) * ancho]
+                     for i in range(n_registros)]
+        else:
+            filas = [plano[i:i + ancho] for i in range(0, len(plano), ancho)]
+            filas = [f for f in filas if len(f) == ancho]
+        return campos, filas
+
+    def _seleccion_actual(self) -> List[str]:
+        """Nombres de las barras seleccionadas en ETABS (puede estar vacío)."""
         try:
             res = self.SapModel.SelectObj.GetSelected(0, [], [])
         except Exception:
             return []
-        ret, salida = _desempaquetar(res)
-        nombres: List[str] = []
-        # salida típica: (count, ObjectType[], ObjectName[])
-        for item in salida:
-            if isinstance(item, (list, tuple)) and item and isinstance(item[0], (str, int)):
-                if item and isinstance(item[0], str):
-                    nombres.extend(str(x) for x in item)
-        return nombres
+        _, salida = _desempaquetar(res)
+        listas = [list(x) for x in salida if isinstance(x, (list, tuple))]
+        if len(listas) >= 2:
+            nombres = [str(v) for v in listas[-1]]
+        elif listas:
+            nombres = [str(v) for v in listas[0]]
+        else:
+            nombres = []
+        return [n for n in nombres if n and not _a_numero(n)]
+
+    def obtener_modelo(self, solo_seleccionados: bool = False) -> ETABSTablas:
+        """
+        Construye el modelo importando las tablas de la base de datos de ETABS.
+
+        Se emplea la base de datos (y no `Results.FrameForce`) porque incluye la
+        **estación** de cada resultado: sin ella no se puede construir la
+        envolvente de momentos a lo largo del elemento. Las tablas se procesan
+        con el mismo código validado de la importación de CSV, de modo que la
+        conexión en vivo y la importación de archivos dan resultados idénticos.
+        """
+        claves = self._tablas_disponibles()
+        if not claves:
+            raise ConexionETABSError(
+                "ETABS no expone tablas de su base de datos. Verifique que el "
+                "modelo esté abierto, desbloqueado y analizado.",
+                codigo="sin_tablas", sugerencias=[
+                    "Ejecute el análisis en ETABS (Analyze > Run Analysis).",
+                    "Desbloquee el modelo (Unlock Model) si está bloqueado.",
+                    "Alternativa: exporte las tablas a CSV e impórtelas.",
+                ])
+
+        def buscar(nombres_deseados):
+            for deseo in nombres_deseados:
+                d = deseo.lower()
+                for clave in claves:
+                    if clave.lower().startswith(d.lower()):
+                        return clave
+            return None
+
+        clave_f = buscar([TABLA_FUERZAS, "Element Forces - Frames"])
+        if clave_f is None:
+            raise ConexionETABSError(
+                "No se encontró la tabla «Element Forces - Frames» en ETABS. "
+                "El modelo debe estar analizado.",
+                codigo="sin_tablas", sugerencias=[
+                    "Ejecute el análisis (Analyze > Run Analysis) y reintente.",
+                    "Compruebe que el caso de carga tenga resultados.",
+                ])
+        campos, filas = self._tabla_como_datos(clave_f)
+        if not campos:
+            raise ConexionETABSError(
+                "La tabla de fuerzas está vacía. Ejecute el análisis en ETABS.",
+                codigo="sin_tablas")
+        tablas_f = [Tabla(clave_f, [campos] + filas)]
+
+        tablas_s: List[Tabla] = []
+        for nombre in TABLAS_SECCIONES:
+            clave = buscar([nombre])
+            if clave:
+                c, f = self._tabla_como_datos(clave)
+                if c:
+                    tablas_s.append(Tabla(clave, [c] + f))
+        tablas_m: List[Tabla] = []
+        for nombre in TABLAS_MATERIALES:
+            clave = buscar([nombre])
+            if clave:
+                c, f = self._tabla_como_datos(clave)
+                if c:
+                    tablas_m.append(Tabla(clave, [c] + f))
+
+        seleccion = self._seleccion_actual() if solo_seleccionados else None
+        if solo_seleccionados and not seleccion:
+            raise ConexionETABSError(
+                "No hay barras seleccionadas en ETABS. Seleccione en el modelo "
+                "las vigas y/o columnas que desea diseñar (o desmarque la "
+                "opción «solo lo seleccionado» para usar todo el modelo).",
+                codigo="sin_seleccion", sugerencias=[
+                    "En ETABS, seleccione las barras con un clic o una ventana "
+                    "de selección y luego pulse «Usar selección de ETABS».",
+                    "Si prefiere todo el edificio, desmarque «solo lo seleccionado».",
+                ])
+        modelo = ETABSTablas.desde_tablas(
+            tablas_f, tablas_s, tablas_m,
+            unidades=self.clave_unidades,
+            tipo_defecto="auto",
+            origen=f"ETABS {self.version} (COM/OAPI)",
+            seleccionados=seleccion)
+        modelo.nombre = f"ETABS v{self.version} (en vivo)"
+        return modelo
+
+    # ------------------------------------------------------------------
+    # Interfaz FuenteETABS
+    # ------------------------------------------------------------------
+    @property
+    def modelo(self) -> ETABSTablas:
+        """Modelo importado de ETABS; se refresca con `recargar()`."""
+        if self._modelo is None:
+            self._modelo = self.obtener_modelo(self._solo_seleccionados)
+        return self._modelo
+
+    def recargar(self, solo_seleccionados: Optional[bool] = None) -> ETABSTablas:
+        """Vuelve a leer las tablas del modelo (tras cambiar la selección)."""
+        if solo_seleccionados is not None:
+            self._solo_seleccionados = bool(solo_seleccionados)
+        self._modelo = self.obtener_modelo(self._solo_seleccionados)
+        return self._modelo
+
+    def listar_elementos(self, solo_seleccionados: bool = False,
+                         tipo: Optional[str] = None) -> List[str]:
+        if solo_seleccionados and not self._solo_seleccionados:
+            self._solo_seleccionados = True
+            self._modelo = None
+        return self.modelo.listar_elementos(tipo=tipo)
+
+    def obtener_elemento(self, nombre: str) -> Elemento:
+        return self.modelo.obtener_elemento(nombre)
+
+    def listar_combos(self) -> List[str]:
+        return self.modelo.listar_combos()
 
     def _coords(self, punto: str) -> Tuple[float, float, float]:
         try:
@@ -318,82 +604,8 @@ class ETABSCom(FuenteETABS):
             pass
         return 0.0, 0.0, 0.0
 
-    def _propiedades_seccion(self, prop: str) -> Tuple[float, float, str]:
-        """Devuelve (b, h, material) en cm para secciones rectangulares."""
-        b = h = 0.0
-        mat = ""
-        try:
-            res = self.SapModel.PropFrame.GetRectangle(prop, "", "", 0.0, 0.0)
-            _, salida = _desempaquetar(res)
-            textos = [v for v in salida if isinstance(v, str)]
-            numeros = [v for v in salida if isinstance(v, (int, float))]
-            if textos:
-                mat = textos[-1]
-            if len(numeros) >= 2:
-                t3, t2 = float(numeros[0]), float(numeros[1])   # t3 = peralte, t2 = ancho
-                h, b = t3 * 100.0, t2 * 100.0                   # m → cm
-        except Exception:
-            pass
-        if b <= 0 or h <= 0:
-            # secciones no rectangulares: intenta propiedades generales
-            try:
-                res = self.SapModel.PropFrame.GetSectProps(prop, 0.0, 0.0, 0.0, 0.0, 0)
-                _, salida = _desempaquetar(res)
-                numeros = [v for v in salida if isinstance(v, (int, float))]
-                if len(numeros) >= 2:
-                    area, as2, as3 = numeros[0], numeros[1], numeros[2]
-                    if area > 0:
-                        h = math.sqrt(area) * 100.0
-                        b = h
-            except Exception:
-                pass
-        return b, h, mat
-
-    def _material(self, mat: str) -> Tuple[float, float]:
-        """Devuelve (f'c, fy) en kgf/cm²."""
-        fc = 210.0
-        fy = 4200.0
-        if not mat:
-            return fc, fy
-        try:
-            res = self.SapModel.PropMaterial.GetOConcrete(mat, 0.0, False, 1.0, 1, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0)
-            _, salida = _desempaquetar(res)
-            numeros = [v for v in salida if isinstance(v, (int, float))]
-            if numeros:
-                fc = float(numeros[0]) / 1.0e4      # kgf/m² → kgf/cm²
-        except Exception:
-            pass
-        try:
-            res = self.SapModel.PropMaterial.GetORebar(mat, 0.0, 0.0, False, 1.0, 1.0, False, 1, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0)
-            _, salida = _desempaquetar(res)
-            numeros = [v for v in salida if isinstance(v, (int, float))]
-            if numeros:
-                fy = float(numeros[0]) / 1.0e4
-        except Exception:
-            pass
-        if fc < 100 or fc > 1200:
-            fc = 210.0
-        if fy < 2000 or fy > 7000:
-            fy = 4200.0
-        return fc, fy
-
-    def listar_elementos(self, solo_seleccionados: bool = False,
-                         tipo: Optional[str] = None) -> List[str]:
-        nombres = self._seleccionados() if solo_seleccionados else self._nombres_marcos()
-        if not nombres:
-            nombres = self._nombres_marcos()
-        salida = []
-        for n in nombres:
-            if n in ("", None):
-                continue
-            if tipo and tipo != "Todos":
-                t = self._clasificar(n)
-                if not t.lower().startswith(tipo.lower()):
-                    continue
-            salida.append(n)
-        return salida
-
     def _clasificar(self, nombre: str) -> str:
+        """Clasifica una barra por la orientación de sus nudos (viga/columna)."""
         try:
             res = self.SapModel.FrameObj.GetPoints(nombre, "", "")
             _, salida = _desempaquetar(res)
@@ -408,23 +620,15 @@ class ETABSCom(FuenteETABS):
         except Exception:
             return "Desconocido"
 
-    def listar_combos(self) -> List[str]:
-        try:
-            res = self.SapModel.RespCombo.GetNameList(0, [])
-            _, salida = _desempaquetar(res)
-            for item in salida:
-                if isinstance(item, (list, tuple)):
-                    return list(item)
-        except Exception:
-            pass
-        return []
-
+    # ------------------------------------------------------------------
+    # Lectura directa de resultados (respaldo, sin estaciones)
+    # ------------------------------------------------------------------
     def _leer_fuerzas(self, nombre: str) -> List[PuntoDemanda]:
         puntos: List[PuntoDemanda] = []
         try:
             res = self.SapModel.Results.FrameForce(
-                nombre, ITEM_OBJECT_ELM, 0, [], [], [], [], [],
-                [], [], [], [], [], [])
+                nombre, ITEM_OBJECT_ELM, 0, [], [], [], [], [], [],
+                [], [], [], [], [])
         except Exception:
             return puntos
         _, salida = _desempaquetar(res)
@@ -435,7 +639,7 @@ class ETABSCom(FuenteETABS):
         # orden OAPI: Obj, Elm, LoadCase, StepType, StepNum, P, V2, V3, T, M2, M3
         if len(listas) < 10:
             return puntos
-        obj, elm, loadcase, steptype, stepnum, P, V2, V3, T, M2, M3 = listas[:11]
+        _, _, loadcase, _, _, P, V2, V3, T, M2, M3 = listas[:11]
         for i in range(min(n, len(loadcase))):
             puntos.append(PuntoDemanda(
                 combo=str(loadcase[i]),
@@ -447,71 +651,13 @@ class ETABSCom(FuenteETABS):
             ))
         return puntos
 
-    def _configurar_salida(self, combos: Sequence[str]) -> None:
-        try:
-            self.SapModel.Results.Setup.DeselectAllCasesAndCombosForOutput()
-            for c in combos:
-                self.SapModel.Results.Setup.SetComboSelectedForOutput(c, True)
-        except Exception:
-            pass
 
-    def _leer_estaciones(self, nombre: str, n_combos: int) -> List[float]:
-        """
-        Obtiene las estaciones de salida. La API entrega las estaciones por
-        cada elemento interno; se usa la longitud del elemento para
-        reconstruirlas cuando no se dispone de 'ObjSta'.
-        """
-        return []
-
-    def obtener_elemento(self, nombre: str) -> Elemento:
-        b, h, mat = self._propiedades_seccion(self._seccion_de(nombre))
-        fc, fy = self._material(mat)
-        p1 = p2 = ""
-        try:
-            res = self.SapModel.FrameObj.GetPoints(nombre, "", "")
-            _, salida = _desempaquetar(res)
-            textos = [v for v in salida if isinstance(v, str)]
-            if len(textos) >= 2:
-                p1, p2 = textos[-2], textos[-1]
-        except Exception:
-            pass
-        x1, y1, z1 = self._coords(p1)
-        x2, y2, z2 = self._coords(p2)
-        L = math.dist((x1, y1, z1), (x2, y2, z2)) * 100.0      # m → cm
-        combos = self.listar_combos()
-        self._configurar_salida(combos)
-        puntos = self._leer_fuerzas(nombre)
-        # reconstruye estaciones si la API no las entrega
-        n_est = max(1, len(puntos) // max(len(combos), 1))
-        for i, p in enumerate(puntos):
-            p.estacion = L * (i % n_est) / max(n_est - 1, 1)
-        return Elemento(
-            nombre=nombre, tipo=self._clasificar(nombre), seccion=self._seccion_de(nombre),
-            story=self._story_de(nombre), material=mat, b=b, h=h, fc=fc, fy=fy, L=L,
-            puntos=puntos, unidad_fuerza="kgf", unidad_longitud="m",
-            origen=f"ETABS {self.version} (COM)")
-
-    def _seccion_de(self, nombre: str) -> str:
-        try:
-            res = self.SapModel.FrameObj.GetSection(nombre, "", "")
-            _, salida = _desempaquetar(res)
-            textos = [v for v in salida if isinstance(v, str)]
-            if textos:
-                return textos[0]
-        except Exception:
-            pass
-        return ""
-
-    def _story_de(self, nombre: str) -> str:
-        try:
-            res = self.SapModel.FrameObj.GetLabelFromName(nombre, "", "")
-            _, salida = _desempaquetar(res)
-            textos = [v for v in salida if isinstance(v, str)]
-            if textos:
-                return textos[0]
-        except Exception:
-            pass
-        return ""
+def _a_numero(texto: str) -> bool:
+    try:
+        float(str(texto).replace(",", ""))
+        return True
+    except (TypeError, ValueError):
+        return False
 
 
 # ===========================================================================
@@ -544,6 +690,42 @@ def ruta_etabs_instalado() -> Optional[str]:
     return None
 
 
-def conectar(adjuntar: bool = True, ruta: Optional[str] = None) -> ETABSCom:
-    """Atajo de conexión; lanza RuntimeError con mensajes en español."""
-    return ETABSCom(adjuntar=adjuntar, ruta_etabs=ruta or ruta_etabs_instalado())
+def conectar(adjuntar: bool = True, ruta: Optional[str] = None,
+             solo_seleccionados: bool = False) -> ETABSCom:
+    """
+    Se engancha a la instancia de ETABS que ya está abierta.
+
+    Solo se lanza una instancia nueva si se indica `ruta` (ruta del
+    ejecutable de ETABS), nunca de forma implícita: abrir ETABS en blanco
+    haría creer al usuario que el modelo se cargó. Lanza
+    `ConexionETABSError` con mensajes y sugerencias en español.
+    """
+    return ETABSCom(adjuntar=adjuntar, ruta_etabs=ruta or None,
+                    solo_seleccionados=solo_seleccionados)
+
+
+def abrir_etabs(modelo: Optional[str] = None,
+                ruta_etabs: Optional[str] = None) -> ETABSCom:
+    """
+    Abre ETABS (v20–v23) y opcionalmente carga un modelo `.edb`.
+
+    `modelo`     : ruta del archivo .edb a abrir (opcional).
+    `ruta_etabs` : ruta de ETABS.exe; si se omite se busca en las rutas típicas.
+    """
+    ruta = ruta_etabs or ruta_etabs_instalado()
+    if not ruta:
+        raise ConexionETABSError(
+            "No se encontró la instalación de ETABS (ETABS.exe).",
+            codigo="sin_com", sugerencias=[
+                "Indique la ruta del ejecutable de ETABS.",
+                "O abra ETABS manualmente con el modelo y use «Conectar».",
+            ])
+    fuente = ETABSCom(adjuntar=False, ruta_etabs=ruta)
+    if modelo:
+        try:
+            fuente.SapModel.File.OpenFile(modelo)
+        except Exception as exc:                     # noqa: BLE001
+            raise RuntimeError(
+                f"ETABS se abrió pero no se pudo cargar {modelo!r}: {exc}"
+            ) from exc
+    return fuente

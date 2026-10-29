@@ -191,8 +191,14 @@ def _mapear_columnas(cabecera: Sequence[str]) -> Dict[str, Tuple[int, str]]:
     return mapa
 
 
-def _sistema_de(cabecera: Sequence[str], unidades: Optional[str]) -> SistemaUnidades:
-    """Deduce el sistema de unidades a partir de los encabezados."""
+def _sistema_de(cabecera: Sequence[str], unidades: Optional[str],
+                defecto: Optional[SistemaUnidades] = None) -> SistemaUnidades:
+    """
+    Deduce el sistema de unidades a partir de los encabezados.
+
+    `defecto` se usa cuando los encabezados no traen unidad (caso de las tablas
+    que entrega el API de ETABS, que solo da nombres de campo).
+    """
     if unidades:
         return sistema_unidades(unidades)
     for col in cabecera:
@@ -210,7 +216,7 @@ def _sistema_de(cabecera: Sequence[str], unidades: Optional[str]) -> SistemaUnid
             longitudes.add(u.lower())
     if len(fuerzas) == 1 and len(longitudes) == 1:
         return sistema_unidades(f"{fuerzas.pop()}_{longitudes.pop()}_C")
-    return sistema_unidades("tonf_m_C")
+    return defecto or sistema_unidades("tonf_m_C")
 
 
 def _a_float(valor, defecto: float = 0.0) -> float:
@@ -255,27 +261,51 @@ class ETABSTablas(FuenteETABS):
                        unidades: Optional[str] = None,
                        tipo_defecto: str = "auto") -> "ETABSTablas":
         tablas_f = leer_tablas(ruta_fuerzas)
-        tabla_f = _buscar_tabla(tablas_f, ["element forces", "frame forces", "fuerzas"])
+        tablas_s = leer_tablas(ruta_secciones) if ruta_secciones else []
+        tablas_m = leer_tablas(ruta_materiales) if ruta_materiales else []
+        return cls.desde_tablas(tablas_f, tablas_s, tablas_m,
+                               unidades=unidades, tipo_defecto=tipo_defecto,
+                               origen=os.path.basename(ruta_fuerzas))
+
+    @classmethod
+    def desde_tablas(cls, tablas_fuerzas: Sequence[Tabla],
+                     tablas_secciones: Sequence[Tabla] = (),
+                     tablas_materiales: Sequence[Tabla] = (),
+                     unidades: Optional[str] = None,
+                     tipo_defecto: str = "auto",
+                     origen: str = "",
+                     seleccionados: Optional[Sequence[str]] = None,
+                     ) -> "ETABSTablas":
+        """
+        Construye el modelo a partir de tablas ya en memoria.
+
+        Es la vía que usa la conexión COM/OAPI: ETABS entrega su base de datos
+        como listas de campos y registros, y aquí se transforman con el mismo
+        código que las tablas exportadas a CSV (incluidas las estaciones).
+
+        `seleccionados`, si se indica, limita el modelo a esas barras.
+        """
+        tabla_f = _buscar_tabla(list(tablas_fuerzas),
+                                ["element forces", "frame forces", "fuerzas"])
         if tabla_f is None:
             raise ValueError(
-                "No se encontró la tabla 'Element Forces - Frames' en el archivo.\n"
+                "No se encontró la tabla 'Element Forces - Frames'.\n"
                 "En ETABS: Display > Tables > Analysis > Element Forces - Frames, "
                 "luego File > Export > Tables > to CSV.")
-        dims: Dict[str, Tuple[float, float]] = {}
-        mats: Dict[str, float] = {}
-        asignaciones: Dict[str, str] = {}
-        material_de: Dict[str, str] = {}
-        if ruta_secciones:
-            for t in leer_tablas(ruta_secciones):
-                _extraer_dimensiones(t, dims, material_de)
-                _extraer_asignaciones(t, asignaciones)
-        if ruta_materiales:
-            for t in leer_tablas(ruta_materiales):
-                _extraer_materiales(t, mats)
 
         cabecera = tabla_f.encabezado()
         mapa = _mapear_columnas(cabecera)
         sistema = _sistema_de(cabecera, unidades)
+
+        dims: Dict[str, Tuple[float, float]] = {}
+        mats: Dict[str, float] = {}
+        asignaciones: Dict[str, str] = {}
+        material_de: Dict[str, str] = {}
+        for t in tablas_secciones:
+            _extraer_dimensiones(t, dims, material_de, sistema)
+            _extraer_asignaciones(t, asignaciones)
+        for t in tablas_materiales:
+            _extraer_materiales(t, mats, sistema)
 
         requeridos = {"frame", "station", "case", "m3"}
         faltan = requeridos - set(mapa)
@@ -285,6 +315,9 @@ class ETABSTablas(FuenteETABS):
                 + ", ".join(sorted(faltan))
                 + f"\nColumnas encontradas: {cabecera}")
 
+        # `None` = todo el modelo; una lista (aunque venga vacía) = solo esas barras
+        filtro = ({str(x) for x in seleccionados}
+                  if seleccionados is not None else None)
         grupos: Dict[str, List[PuntoDemanda]] = {}
         seccion_de: Dict[str, str] = {}
         story_de: Dict[str, str] = {}
@@ -293,6 +326,8 @@ class ETABSTablas(FuenteETABS):
             nombre = str(reg[cabecera[mapa["frame"][0]]]).strip()
             if not nombre:
                 continue
+            if filtro is not None and nombre not in filtro:
+                continue
             caso = str(reg[cabecera[mapa["case"][0]]]).strip()
 
             def val(campo: str) -> float:
@@ -300,29 +335,30 @@ class ETABSTablas(FuenteETABS):
                     return 0.0
                 return _a_float(reg[cabecera[mapa[campo][0]]])
 
-            est = val("station")
-            p = val("p")
-            v2 = val("v2")
-            v3 = val("v3")
-            t = val("t")
-            m2 = val("m2")
-            m3 = val("m3")
             unidad_est = mapa["station"][1] or sistema.longitud
             puntos = grupos.setdefault(nombre, [])
             puntos.append(PuntoDemanda(
                 combo=caso,
-                estacion=longitud_a_cm(est, unidad_est),
-                P=sistema.fuerza_a_kgf(p),
-                V2=sistema.fuerza_a_kgf(v2),
-                V3=sistema.fuerza_a_kgf(v3),
-                T=sistema.momento_a_kgfcm(t),
-                M2=sistema.momento_a_kgfcm(m2),
-                M3=sistema.momento_a_kgfcm(m3),
+                estacion=longitud_a_cm(val("station"), unidad_est),
+                P=sistema.fuerza_a_kgf(val("p")),
+                V2=sistema.fuerza_a_kgf(val("v2")),
+                V3=sistema.fuerza_a_kgf(val("v3")),
+                T=sistema.momento_a_kgfcm(val("t")),
+                M2=sistema.momento_a_kgfcm(val("m2")),
+                M3=sistema.momento_a_kgfcm(val("m3")),
             ))
             if "section" in mapa:
                 seccion_de[nombre] = str(reg[cabecera[mapa["section"][0]]]).strip()
             if "story" in mapa:
                 story_de[nombre] = str(reg[cabecera[mapa["story"][0]]]).strip()
+
+        if filtro:
+            faltantes = filtro - set(grupos)
+            if faltantes:
+                raise ValueError(
+                    "Las barras seleccionadas no aparecen en la tabla de "
+                    "fuerzas (¿el modelo está analizado?): "
+                    + ", ".join(sorted(faltantes)))
 
         # completa la sección asignada con la tabla de asignaciones (si existe)
         for nombre in grupos:
@@ -347,13 +383,13 @@ class ETABSTablas(FuenteETABS):
             tipo = _tipo_por_nombre(nombre) if tipo_defecto == "auto" else tipo_defecto
             elementos[nombre] = Elemento(
                 nombre=nombre, tipo=tipo, seccion=seccion,
-                story=story_de.get(nombre, ""), material="",
+                story=story_de.get(nombre, ""), material=material,
                 b=b, h=h, fc=fc, fy=4200.0, L=L, puntos=pts,
                 unidad_fuerza=sistema.fuerza, unidad_longitud=sistema.longitud,
-                origen=os.path.basename(ruta_fuerzas))
+                origen=origen)
         if not elementos:
-            raise ValueError("No se pudieron extraer elementos del archivo de fuerzas.")
-        return cls(elementos, sistema, origen=os.path.basename(ruta_fuerzas))
+            raise ValueError("No se pudieron extraer elementos de las tablas de fuerzas.")
+        return cls(elementos, sistema, origen=origen)
 
     # ------------------------------------------------------------------
     def listar_elementos(self, solo_seleccionados: bool = False,
@@ -413,13 +449,14 @@ def _buscar_tabla(tablas: Sequence[Tabla], palabras: Sequence[str]) -> Optional[
 
 
 def _extraer_dimensiones(tabla: Tabla, dims: Dict[str, Tuple[float, float]],
-                         material_de: Optional[Dict[str, str]] = None) -> None:
+                         material_de: Optional[Dict[str, str]] = None,
+                         sistema_defecto: Optional[SistemaUnidades] = None) -> None:
     """Extrae b, h (y el material asociado) de tablas de propiedades de sección."""
     cab = tabla.encabezado()
     mapa = _mapear_columnas(cab)
     if not ({"t3", "t2"} <= set(mapa)):
         return
-    sistema = _sistema_de(cab, None)
+    sistema = _sistema_de(cab, None, sistema_defecto)
     for reg in tabla.registros():
         nombre = ""
         for clave in ("section", "frame"):
@@ -464,12 +501,13 @@ def _extraer_asignaciones(tabla: Tabla, mapa_salida: Dict[str, str]) -> None:
             mapa_salida[frame] = seccion
 
 
-def _extraer_materiales(tabla: Tabla, mats: Dict[str, float]) -> None:
+def _extraer_materiales(tabla: Tabla, mats: Dict[str, float],
+                        sistema_defecto: Optional[SistemaUnidades] = None) -> None:
     cab = tabla.encabezado()
     mapa = _mapear_columnas(cab)
     if "fc" not in mapa:
         return
-    sistema = _sistema_de(cab, None)
+    sistema = _sistema_de(cab, None, sistema_defecto)
     for reg in tabla.registros():
         nombre = ""
         if "material" in mapa:

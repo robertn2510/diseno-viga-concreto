@@ -11,6 +11,16 @@ echo  2) Exportar TODO el modelo y subirlo al servidor
 echo  3) Solo exportar a la carpeta "salida" (cargar luego a mano)
 echo  4) Probar el puente con el modelo demo (sin ETABS)
 echo.
+where python >nul 2>nul
+if errorlevel 1 (
+  echo [ERROR] No se encontro Python en el PATH.
+  pause
+  exit /b 1
+)
+python -c "import comtypes" >nul 2>nul
+if errorlevel 1 (
+  echo [AVISO] Sin comtypes no se puede leer ETABS. Instalela con: pip install comtypes
+)
 set /p OPC="Opcion [1-4]: "
 if "%OPC%"=="1" (
   set /p URL="Direccion del servidor (ej. http://localhost:8000): "

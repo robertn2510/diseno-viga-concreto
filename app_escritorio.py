@@ -171,6 +171,9 @@ class AppE060(tk.Tk):
 
         ttk.Button(barra, text="Conectar ETABS", style="Sec.TButton",
                    command=self.conectar_etabs).pack(side="left", padx=3)
+        ttk.Button(barra, text="Solo selección ETABS", style="Sec.TButton",
+                   command=lambda: self.conectar_etabs(solo_seleccionados=True)
+                   ).pack(side="left", padx=3)
         ttk.Button(barra, text="Importar tablas…", style="Sec.TButton",
                    command=self.importar_tablas).pack(side="left", padx=3)
         ttk.Button(barra, text="Actualizar lista", style="Sec.TButton",
@@ -449,20 +452,37 @@ class AppE060(tk.Tk):
         if nombre.startswith("Modelo demo"):
             self.cargar_demo()
         elif nombre.startswith("ETABS"):
-            self.conectar_etabs()
+            # si ya hay conexión, basta con releer (permite cambiar la
+            # selección en ETABS y volver a diseñar sin reconectar)
+            self.conectar_etabs(recargar=True)
         # las fuentes de tablas se cargan directamente en el evento del archivo
 
-    def conectar_etabs(self):
-        from e060.etabs.com import ConexionETABSError, diagnostico_com
+    def conectar_etabs(self, solo_seleccionados=False, recargar=False):
+        """
+        Conecta con ETABS (o relee sus tablas).
+
+        solo_seleccionados : diseña únicamente las barras seleccionadas en ETABS.
+        recargar           : no reconecta, solo vuelve a leer las tablas (útil
+                             después de cambiar la selección en ETABS).
+        """
+        from e060.etabs.com import (ConexionETABSError, conectar,
+                                    diagnostico_com)
         diag = diagnostico_com()
         if not diag["com_disponible"]:
             self._mostrar_sin_etabs(diag["motivo"], diag["sugerencias"])
             self.var["estado"].set("Sin conexión con ETABS.")
             return
-        self.var["estado"].set("Conectando con ETABS…")
+        fuente = getattr(self, "fuente", None)
+        reusar = (recargar and self.fuente_id == "etabs"
+                  and hasattr(fuente, "recargar"))
+        self.var["estado"].set("Leyendo tablas de ETABS…")
         self.update_idletasks()
         try:
-            fuente = conectar(adjuntar=True)
+            if reusar:
+                fuente.recargar(solo_seleccionados or None)
+            else:
+                fuente = conectar(adjuntar=True,
+                                  solo_seleccionados=solo_seleccionados)
             self.fuente = fuente
             self.fuente_id = "etabs"
             info = fuente.info_modelo()
@@ -473,8 +493,11 @@ class AppE060(tk.Tk):
                 valores.append(etiqueta)
                 self.combo_fuente["values"] = valores
             self.cargar_elementos()
-            self.var["estado"].set("Conectado a ETABS %s · modelo: %s"
-                                   % (info.get("version", "?"), info.get("modelo", "")))
+            modo = ("solo barras seleccionadas" if getattr(
+                fuente, "_solo_seleccionados", False) else "todo el modelo")
+            self.var["estado"].set(
+                "Conectado a ETABS %s (%s) · modelo: %s"
+                % (info.get("version", "?"), modo, info.get("modelo", "")))
         except ConexionETABSError as exc:
             self._mostrar_sin_etabs(str(exc), exc.sugerencias)
             self.var["estado"].set("Sin conexión con ETABS.")

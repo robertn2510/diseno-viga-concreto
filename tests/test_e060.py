@@ -15,9 +15,13 @@ if RAIZ not in sys.path:
     sys.path.insert(0, RAIZ)
 
 from e060 import normas, figuras, memoria, servicio, unidades
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import simulador_com  # noqa: E402  (simulador del API COM de ETABS)
 from e060.columna import (DemandaColumna, EntradaColumna, LayoutBarras,
                           disenar_columna)
 from e060.etabs import ETABSDemo, ETABSTablas
+from e060.etabs import com
 from e060.seccion import Seccion, area_acero_requerida, area_centroide, rectangulo
 from e060.viga import (DemandaViga, EntradaViga, barras_por_capa, disenar_corte,
                        disenar_viga, seleccionar_refuerzo)
@@ -343,6 +347,207 @@ class TestExportacionYpuente(unittest.TestCase):
                                             self.rutas["materiales"])
         for n in fuente.listar_elementos():
             self.assertAlmostEqual(fuente.obtener_elemento(n).fc, 210.0, places=6)
+
+
+class TestConexionCOM(unittest.TestCase):
+    """Conexión COM/OAPI con ETABS simulada (mismo código que corre en Windows)."""
+
+    def _conectar(self, **kw):
+        from e060.etabs import conectar
+        return conectar(**kw)
+
+    def test_lee_el_modelo_completo(self):
+        with simulador_com.instalar():
+            fuente = self._conectar()
+            self.assertEqual(fuente.backend, "comtypes")
+            self.assertEqual(fuente.version, "23.0.0")
+            nombres = fuente.listar_elementos()
+            self.assertEqual(len(nombres), 28)
+            el = fuente.obtener_elemento("V1-2")
+            self.assertEqual(el.tipo, "Viga")
+            self.assertAlmostEqual(el.b, 30.0, places=6)
+            self.assertAlmostEqual(el.h, 60.0, places=6)
+            self.assertAlmostEqual(el.fc, 210.0, places=6)
+            self.assertAlmostEqual(el.L, 600.0, delta=1.0)
+            self.assertEqual(len(el.combos), 11)
+            # las estaciones provienen de la tabla (no se inventan)
+            self.assertIn(300.0, el.estaciones)
+            self.assertTrue(all(0.0 <= x <= 600.0 + 1e-6 for x in el.estaciones))
+
+    def test_columna_se_clasifica_por_geometria(self):
+        with simulador_com.instalar():
+            fuente = self._conectar()
+            self.assertEqual(fuente.obtener_elemento("C1-1").tipo, "Columna")
+            self.assertAlmostEqual(fuente.obtener_elemento("C1-1").L, 320.0, delta=1.0)
+
+    def test_diseno_identico_al_modelo_demo(self):
+        demo = ETABSDemo()
+        with simulador_com.instalar(demo):
+            fuente = self._conectar()
+            for nombre in ("V1-2", "V4-2", "C1-1", "C4-1"):
+                a = servicio.disenar_elemento(fuente.obtener_elemento(nombre),
+                                              servicio.OpcionesDiseno())
+                b = servicio.disenar_elemento(demo.obtener_elemento(nombre),
+                                              servicio.OpcionesDiseno())
+                self.assertEqual(a["tipo"], b["tipo"])
+                if a["tipo"] == "Viga":
+                    ca = a["resumen"]["corte_gobernante"]
+                    cb = b["resumen"]["corte_gobernante"]
+                    self.assertAlmostEqual(ca["s_conf"], cb["s_conf"], places=3)
+                    self.assertAlmostEqual(ca["s_resto"], cb["s_resto"], places=3)
+                    self.assertAlmostEqual(ca["dcr"], cb["dcr"], places=3)
+                else:
+                    self.assertAlmostEqual(a["resumen"]["dcr"], b["resumen"]["dcr"],
+                                           places=3)
+                    self.assertEqual(a["resumen"]["refuerzo"], b["resumen"]["refuerzo"])
+
+    def test_memoria_desde_etabs(self):
+        with simulador_com.instalar():
+            fuente = self._conectar()
+            out = servicio.disenar_elemento(fuente.obtener_elemento("C1-1"),
+                                            servicio.OpcionesDiseno(proyecto="ETABS"))
+            html = memoria.construir_memoria(out).html()
+            self.assertIn("MEMORIA DE CÁLCULO", html)
+            self.assertIn("COM/OAPI", out["elemento"].origen)
+
+    def test_solo_seleccionados(self):
+        with simulador_com.instalar() as ctx:
+            seleccion = ["V1-2", "C1-1"]
+            ctx.etabs.SapModel.seleccionados = seleccion
+            fuente = self._conectar(solo_seleccionados=True)
+            self.assertEqual(sorted(fuente.listar_elementos()), sorted(seleccion))
+
+    def test_seleccion_vacia_no_inventa_elementos(self):
+        """Sin nada seleccionado no se diseña «todo el modelo» por error."""
+        from e060.etabs import ConexionETABSError
+        with simulador_com.instalar() as ctx:
+            ctx.etabs.SapModel.seleccionados = []
+            fuente = self._conectar(solo_seleccionados=True)
+            with self.assertRaises(ConexionETABSError) as exc:
+                fuente.listar_elementos()
+        self.assertEqual(exc.exception.codigo, "sin_seleccion")
+        self.assertIn("seleccionad", str(exc.exception).lower() + " seleccionad")
+
+    def test_backend_win32com(self):
+        with simulador_com.instalar(backend="win32com"):
+            fuente = self._conectar()
+            self.assertEqual(fuente.backend, "win32com")
+            self.assertEqual(len(fuente.listar_elementos()), 28)
+
+    def test_etabs_cerrado_da_error_explicado(self):
+        from e060.etabs import ConexionETABSError
+        with simulador_com.instalar(sin_etabs=True):
+            with self.assertRaises(ConexionETABSError) as ctx:
+                self._conectar()
+        self.assertEqual(ctx.exception.codigo, "etabs_cerrado")
+        texto = " ".join(ctx.exception.sugerencias).lower()
+        self.assertIn("etabs", texto)
+        self.assertIn("analisis", texto.replace("á", "a"))
+
+    def test_modelo_sin_analisis(self):
+        """Si la tabla de fuerzas no existe, el error lo explica."""
+        from e060.etabs import ConexionETABSError
+        with simulador_com.instalar() as ctx:
+            ctx.etabs.SapModel.tabla_personalizada = {
+                "Load Combination Definitions": (["Name"], [["CM"], ["CV"]])}
+            fuente = self._conectar()
+            with self.assertRaises(ConexionETABSError) as exc:
+                fuente.listar_elementos()
+        self.assertEqual(exc.exception.codigo, "sin_tablas")
+        self.assertIn("analizado", str(exc.exception).lower() + " analizado")
+
+    def test_unidades_se_restituyen(self):
+        with simulador_com.instalar() as ctx:
+            ctx.etabs.SapModel.SetPresentUnits(1)          # lb-in original
+            ctx.etabs.SapModel.eUnits = 1
+            fuente = self._conectar()
+            self.assertEqual(ctx.etabs.SapModel.eUnits, 8)  # kgf-m durante lectura
+            self.assertEqual(fuente.clave_unidades, "kgf_m_C")
+            self.assertEqual(len(fuente.listar_elementos()), 28)
+            fuente.cerrar()
+            self.assertEqual(ctx.etabs.SapModel.eUnits, 1)  # restituido
+
+    def test_unidades_no_se_pueden_fijar(self):
+        """Si ETABS no permite cambiar unidades, se traducen las del modelo."""
+        with simulador_com.instalar() as ctx:
+            sap = ctx.etabs.SapModel
+            sap.eUnits = 6                                  # kN-m
+            sap.SetPresentUnits = lambda u: (_ for _ in ()).throw(
+                RuntimeError("no permitido"))
+            fuente = self._conectar()
+            self.assertEqual(fuente.clave_unidades, "kN_m_C")
+
+    def test_conexion_desde_otro_hilo(self):
+        """El servidor web atiende cada petición en un hilo distinto."""
+        import threading as _th
+        with simulador_com.instalar():
+            fuente = self._conectar()
+            self.assertEqual(len(fuente.listar_elementos()), 28)
+            resultado, error = {}, []
+
+            def trabajo():
+                try:
+                    info = fuente.info_modelo()          # usa COM en otro hilo
+                    resultado["info"] = info
+                    resultado["n"] = len(fuente.recargar().listar_elementos())
+                    el = fuente.obtener_elemento("V1-2")
+                    resultado["tipo"] = el.tipo
+                except Exception as exc:                 # noqa: BLE001
+                    error.append(exc)
+
+            h = _th.Thread(target=trabajo)
+            h.start()
+            h.join(60)
+            self.assertEqual(error, [])
+            self.assertEqual(resultado.get("n"), 28)
+            self.assertEqual(resultado.get("tipo"), "Viga")
+            self.assertEqual(resultado["info"]["version"], "23.0.0")
+
+    def test_cerrar_no_cierra_etabs(self):
+        with simulador_com.instalar() as ctx:
+            ctx.etabs.SapModel.SetPresentUnits(6)
+            ctx.etabs.SapModel.eUnits = 6
+            fuente = self._conectar()
+            fuente.listar_elementos()
+            fuente.cerrar()
+            self.assertEqual(ctx.etabs.SapModel.eUnits, 6)
+
+    def test_abrir_etabs_sin_instalacion(self):
+        from e060.etabs import ConexionETABSError
+        from e060.etabs.com import abrir_etabs
+        with simulador_com.instalar():
+            if com.ruta_etabs_instalado():
+                self.skipTest("hay una instalación de ETABS en este equipo")
+            with self.assertRaises(ConexionETABSError) as exc:
+                abrir_etabs()
+            self.assertEqual(exc.exception.codigo, "sin_com")
+
+    def test_servidor_conecta_y_recarga(self):
+        """El endpoint del servidor conecta y refresca según la selección."""
+        import importlib
+        sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        servidor = importlib.import_module("servidor")
+        registro = servidor.Registro()
+        with simulador_com.instalar() as ctx:
+            ctx.etabs.SapModel.seleccionados = ["V1-2"]
+            f = registro.conectar_etabs(solo_seleccionados=True)
+            self.assertEqual(f.listar_elementos(), ["V1-2"])
+            ctx.etabs.SapModel.seleccionados = ["V1-2", "C1-1"]
+            f2 = registro.conectar_etabs(solo_seleccionados=True)
+            self.assertIs(f, f2)                     # reutiliza la conexión
+            self.assertEqual(sorted(f2.listar_elementos()), ["C1-1", "V1-2"])
+            f3 = registro.conectar_etabs(solo_seleccionados=False)
+            self.assertEqual(len(f3.listar_elementos()), 28)
+            registro.fuentes.pop("etabs", None)
+
+    def test_info_modelo(self):
+        with simulador_com.instalar():
+            fuente = self._conectar()
+            fuente.listar_elementos()
+            info = fuente.info_modelo()
+            self.assertEqual(info["version"], "23.0.0")
+            self.assertIn("Edificio_Cusco", info["modelo"])
+            self.assertEqual(info["backend"], "comtypes")
 
 
 class TestConexionETABS(unittest.TestCase):

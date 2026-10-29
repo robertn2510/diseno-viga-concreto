@@ -117,7 +117,11 @@ def main(argv=None) -> int:
         rutas = exportar_tablas(fuente, args.carpeta,
                                 solo_seleccionados=args.seleccionados)
     except Exception as exc:                          # noqa: BLE001
+        from e060.etabs.com import ConexionETABSError
         print(f"ERROR al exportar: {exc}", file=sys.stderr)
+        if isinstance(exc, ConexionETABSError):
+            for i, sugerencia in enumerate(exc.sugerencias, 1):
+                print(f"  {i}. {sugerencia}", file=sys.stderr)
         return 2
     for clave, ruta in rutas.items():
         print(f"  {clave:10s} → {ruta}")

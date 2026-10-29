@@ -34,7 +34,7 @@ git clone <repositorio>
 cd diseno-viga-concreto
 
 # El motor no requiere dependencias externas (solo biblioteca estándar de Python 3.8+)
-python -m unittest discover -s tests -v     # verificación del motor (46 pruebas)
+python -m unittest discover -s tests -v     # verificación del motor (62 pruebas)
 ```
 
 Dependencias **opcionales**:
@@ -66,9 +66,13 @@ Pasos: elegir fuente → seleccionar elemento → revisar solicitaciones →
 python app_escritorio.py
 ```
 
-Pasos: `Conectar ETABS` (o `Modelo demo` / `Importar tablas…`) → seleccionar el
-elemento en la lista → pestaña **2 · Diseño** → `Diseñar según E.060` →
+Pasos: `Conectar ETABS` (todo el modelo) o `Solo selección ETABS` (las barras
+seleccionadas en ETABS); también `Modelo demo` / `Importar tablas…` → seleccionar
+el elemento en la lista → pestaña **2 · Diseño** → `Diseñar según E.060` →
 pestaña **4 · Memoria de cálculo** → `Generar y abrir HTML` / `Exportar PDF`.
+
+Para cambiar de elemento en ETABS basta con volver a seleccionar la fuente
+`ETABS v…` en la lista: relee las tablas sin reiniciar nada.
 
 ### 3.3 Tablas de ejemplo (sin ETABS)
 
@@ -127,62 +131,134 @@ revisión o scripts de control de calidad.
 
 ## 4. Conexión con ETABS v20 – v23
 
-1. Abra ETABS con el modelo cargado y **desbloquéelo** (`Unlock Model`).
-2. Instale `comtypes` en el mismo Python de 64 bits que usará el programa.
-3. En la aplicación pulse **Conectar ETABS**.
+### 4.1 Puesta en marcha en Windows (paso a paso)
 
-Detalles técnicos implementados:
+La conexión en vivo es **COM/OAPI**, así que el programa debe correr en el
+**mismo Windows** donde está ETABS, con la **misma arquitectura** (ETABS de
+64 bits → Python de 64 bits).
 
-* Se usa la interfaz **OAPI** (`CSI.ETABS.API.ETABSObject`), estable y común a
-  las versiones 20, 21, 22 y 23 (la versión se lee y se reporta en la interfaz).
-* Si hay **barras seleccionadas en ETABS**, el programa las lista primero
-  (`SelectObj.GetSelected`), lo que responde al flujo "selecciono un elemento
-  en ETABS y lo diseño".
-* Las unidades del modelo se fijan temporalmente en **kgf-m** para leer fuerzas,
-  momentos y tensiones de forma coherente (se restituyen al cerrar).
-* Se obtienen: sección asignada (`FrameObj.GetSection`), dimensiones
-  (`PropFrame.GetRectangle`), material (`PropMaterial.GetOConcrete` /
-  `GetORebar`), longitud y orientación (viga/columna) por coordenadas de nudos.
-* Las solicitaciones se leen combinación por combinación
-  (`Results.Setup.SetComboSelectedForOutput` + `Results.FrameForce`).
+1. Instale **Python 3.8 o superior de 64 bits** (python.org, "Windows installer
+   (64-bit)"). Compruebe en la consola:
+   ```bat
+   python -c "import platform; print(platform.architecture()[0])"
+   ```
+   Debe imprimir `64bit`.
+2. Instale la librería de automatización COM (una de las dos basta):
+   ```bat
+   pip install comtypes
+   ::  o bien
+   pip install pywin32
+   ```
+3. Abra **ETABS v20, v21, v22 o v23**, cargue el modelo y **desbloquéelo**
+   (`Model > Unlock Model`).
+4. Ejecute el análisis: `Analyze > Run Analysis`. Sin resultados no hay
+   solicitaciones que leer (el programa lo detecta y lo explica).
+5. Arranque el programa en esa misma máquina:
+   ```bat
+   python servidor.py            :: interfaz web en http://localhost:8000
+   iniciar_escritorio.bat        :: app de escritorio (Tkinter)
+   ```
+6. En la interfaz:
+   * **Conectar ETABS** → lee **todo el modelo**.
+   * **Solo selección** → lee únicamente las barras que haya seleccionado en
+     ETABS (permite seleccionar la viga o columna y diseñarla al instante).
+   * Tras cambiar la selección en ETABS, ese mismo botón **vuelve a leer** sin
+     reconectar.
 
-### 4.1 La conexión en vivo requiere Windows
+Si ETABS no está abierto, el programa **no lanza una instancia vacía**: informa
+del problema con pasos concretos (código `etabs_cerrado`). Para abrir ETABS
+desde el programa, indique explícitamente la ruta:
 
-La interfaz OAPI de ETABS es **automatización COM**, que solo existe en Windows.
-Si la aplicación web corre en Linux/macOS (por ejemplo, en un servidor o en una
-máquina virtual), el programa **no intenta conectarse a ciegas**: al abrir la
-interfaz detecta la situación y muestra un aviso en el panel lateral con el
-motivo y las alternativas. La tarjeta *ETABS en ejecución* queda marcada como
-**no disponible** y `POST /api/conectar-etabs` responde `409` con el diagnóstico
-estructurado:
-
-```json
-{"ok": false, "codigo": "plataforma", "es_windows": false,
- "error": "La automatización COM/OAPI de ETABS solo existe en Windows; …",
- "sugerencias": ["Exporte las tablas … ", "…", "…"]}
+```python
+from e060.etabs.com import abrir_etabs
+fuente = abrir_etabs(modelo=r"C:\proyectos\Edificio.edb")   # lanza ETABS y abre el modelo
 ```
 
-Rutas equivalentes, según el caso de uso:
+### 4.2 Qué se lee de ETABS y por qué
+
+* Se usa la interfaz **OAPI** (`CSI.ETABS.API.ETABSObject`), estable y común a
+  las versiones 20, 21, 22 y 23; la versión se lee y se muestra en la interfaz.
+* Las solicitaciones se leen de la **base de datos de presentación**
+  (`DatabaseTables.GetTableForDisplayArray`), no de `Results.FrameForce`. La
+  razón es decisiva: `FrameForce` no devuelve la **estación** de cada resultado,
+  y sin estación no se puede construir la envolvente de momentos a lo largo del
+  elemento. Con las tablas se obtienen las estaciones reales del modelo
+  (p. ej. `0, 100, …, 600 cm`) y las mismas columnas que el usuario ve en ETABS.
+* Se importan además las tablas de **secciones** (`Frame Assignments - Section
+  Properties`, `Frame Section Properties - Rectangular`) y de **materiales**
+  (`Material Properties - Concrete Data`) para obtener `b`, `h` y `f'c`.
+* La clasificación viga/columna se deduce de la orientación de la barra
+  (coordenadas de sus nudos), no del nombre.
+* Las tablas del API **no** traen unidades en el encabezado: el programa fija
+  el modelo en **kgf-m** mientras lee (y **restituye** el sistema original al
+  terminar). Si ETABS no permite cambiar de unidades, se traduce el sistema en
+  que esté el modelo.
+* El tipo de cada barra sale de la geometría y de la sección asignada; el modelo
+  importado por COM pasa por **el mismo analizador** que la importación de CSV,
+  de modo que ambos caminos dan resultados idénticos (hay una prueba que lo
+  compara elemento por elemento).
+* COM exige **`CoInitialize` por hilo** y el servidor web atiende cada petición
+  en un hilo distinto: el conector inicializa COM en cada hilo y se reengancha
+  a la instancia abierta de ETABS cuando la petición llega en otro hilo
+  (`GetActiveObject`), sin reutilizar un objeto de otro apartamento.
+
+Todo esto es verificable **sin Windows**: `tests/simulador_com.py` reproduce la
+API COM/OAPI de ETABS (con `comtypes` y con `win32com`) sobre el modelo demo, y
+la suite lo ejecuta de verdad.
+
+```bash
+python tests/simulador_com.py     # demostración de la conexión simulada
+```
+
+### 4.3 Errores de conexión y sus códigos
+
+La interfaz **nunca** muestra un error técnico de `comtypes`: muestra el motivo
+en español, los pasos a seguir y la alternativa de trabajo. Las respuestas de la
+API llevan el código para poder automatizar.
+
+| Código | Significado | Qué hace el programa |
+|---|---|---|
+| `plataforma` | El servidor no es Windows | Aviso al abrir + `409`; ofrece importar tablas o el puente |
+| `sin_com` | No hay `comtypes`/`pywin32` | Explica cómo instalarlo en el Python de 64 bits |
+| `etabs_cerrado` | ETABS no está abierto (o se cerró) | Indica abrir ETABS con el modelo, no crea una instancia vacía |
+| `sin_tablas` | No hay tablas de resultados | Pide ejecutar el análisis (`Analyze > Run Analysis`) |
+| `sin_seleccion` | «Solo selección» sin barras elegidas | Explica cómo seleccionar en ETABS o usar todo el modelo |
+| `error_com` | Otro fallo de COM | Mensaje y sugerencias genéricas de diagnóstico |
+
+```json
+{"ok": false, "codigo": "etabs_cerrado",
+ "error": "No se encontró una instancia de ETABS en ejecución. …",
+ "es_windows": true, "sugerencias": ["Abra ETABS v20, v21, v22 o v23 …", "…"]}
+```
+
+La app de escritorio verifica antes de conectar y, si no es posible, ofrece
+importar las tablas en el mismo diálogo.
+
+### 4.4 Si la interfaz corre en Linux/macOS
+
+La automatización COM no existe fuera de Windows, así que el programa **no
+intenta conectarse a ciegas**: detecta la situación, marca la tarjeta *ETABS en
+ejecución* como **no disponible** y muestra el motivo y las alternativas en el
+panel lateral. `POST /api/conectar-etabs` responde `409` con el diagnóstico.
 
 | Situación | Cómo trabajar |
 |---|---|
 | Windows con ETABS abierto | App de escritorio o web local → **Conectar ETABS** (COM/OAPI). |
-| Servidor/web en Linux o macOS | **Importar tablas** exportadas del modelo (`Element Forces - Frames`). |
+| Interfaz web en Linux/macOS | **Puente** `puente_etabs.py` en el Windows de ETABS (envía los CSV por HTTP) o **Importar tablas**. |
 | Sin ETABS (pruebas, docencia) | **Modelo demo** o los CSV de `ejemplos/`. |
-
-La propia app de escritorio verifica antes de conectar y, si no es posible,
-ofrece importar las tablas en el mismo diálogo.
 
 **Solución de problemas**
 
 | Síntoma | Causa / solución |
 |---|---|
 | "No se pudo conectar con ETABS" | ETABS cerrado o con el modelo bloqueado; abra el modelo y desbloquéelo. |
-| "No se encontró la librería de automatización COM" | `pip install comtypes` (Python de 64 bits, el mismo con que corre el programa). |
-| "…solo existe en Windows" | El servidor no es Windows: use **Importar tablas** o ejecute la app de escritorio en el mismo Windows de ETABS. |
-| `pywin32`/`comtypes` instalado y sigue fallando | Python de 32 bits frente a ETABS de 64 bits (o al revés); use la misma arquitectura. |
+| "No se encontró la librería de automatización COM" | `pip install comtypes` con el Python de 64 bits que ejecuta el programa. |
+| "…solo existe en Windows" | El servidor no es Windows: use el puente o **Importar tablas**. |
+| `comtypes`/`pywin32` instalado y sigue fallando | Python de 32 bits frente a ETABS de 64 bits (o al revés); iguale la arquitectura. |
+| "La tabla de fuerzas está vacía" / `sin_tablas` | El modelo no está analizado: `Analyze > Run Analysis`. |
+| "No hay barras seleccionadas" | Seleccione barras en ETABS, o use **Todo el modelo**. |
 | No aparecen combinaciones | Verifique que existan *Load Combinations* en el modelo. |
-| El programa lista todo el modelo | Seleccione las barras en ETABS antes de conectar o de actualizar la lista. |
+| Se cierra ETABS y la app queda "conectada" | Vuelva a pulsar el botón de ETABS: reconecta y, si ya no está, lo explica (`etabs_cerrado`). |
 
 ---
 
@@ -322,7 +398,8 @@ diseno-viga-concreto/
 ├── puente_etabs.py           # puente: exporta de ETABS (Windows) y sube a la web
 ├── app_escritorio.py         # interfaz Tkinter (Windows/ETABS)
 ├── ejemplos/                 # tablas de ETABS de ejemplo (y su generador)
-├── tests/test_e060.py        # 46 pruebas automáticas
+├── tests/test_e060.py        # pruebas automáticas del motor y de la conexión
+├── tests/simulador_com.py    # simulador de la API COM/OAPI de ETABS (sin Windows)
 ├── legado/                   # versión 3 (solo vigas, entrada manual)
 └── salidas/                  # memorias generadas (no versionado)
 ```
@@ -338,8 +415,12 @@ python -m unittest discover -s tests -v
 Cubren: factores normativos, conversión de unidades, geometría de secciones,
 `P0`, diagrama de interacción (uniaxial y biaxial, simetría), diseño de vigas,
 columnas, confinamiento, cortante por capacidad, el modelo demo completo
-(28 elementos), importación de tablas de ejemplo, figuras SVG (validación XML)
-y generación de la memoria en HTML, Markdown y PDF.
+(28 elementos), importación de tablas de ejemplo, figuras SVG (validación XML),
+generación de la memoria en HTML, Markdown y PDF, el puente de exportación y la
+**conexión COM/OAPI con ETABS simulada** (`tests/simulador_com.py`): lectura de
+las tablas del modelo, estaciones reales, clasificación viga/columna, unidades
+(con restitución), backends `comtypes` y `win32com`, «solo selección», conexión
+desde otro hilo y todos los errores de conexión explicados.
 
 Incluye una **validación independiente de la sección**: los valores `P` y `M`
 de una fibra se comparan contra una integración numérica por franjas

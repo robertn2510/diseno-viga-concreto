@@ -64,6 +64,10 @@ class Registro:
         self.demo()
         salida = []
         for ident, f in self.fuentes.items():
+            if ident == "etabs":
+                # la conexión COM se informa abajo con su diagnóstico completo
+                # (evita duplicar la tarjeta en la interfaz)
+                continue
             salida.append({
                 "id": ident,
                 "nombre": getattr(f, "nombre", ident),
@@ -77,6 +81,9 @@ class Registro:
         salida.append({
             "id": "etabs",
             "nombre": "ETABS en ejecución (COM/OAPI)",
+            "solo_seleccionados": bool(getattr(self.fuentes.get("etabs"),
+                                               "_solo_seleccionados", False))
+            if conectado else False,
             "descripcion": ("Conectado · usa los elementos seleccionados o todo el modelo"
                             if conectado else
                             "Conecta con ETABS v20–v23 abierto y usa los elementos "
@@ -89,10 +96,16 @@ class Registro:
         })
         return salida
 
-    def conectar_etabs(self):
+    def conectar_etabs(self, solo_seleccionados: bool = False):
+        """Se engancha a ETABS; si ya estaba conectado, solo recarga las tablas."""
         from e060.etabs import conectar
-        f = conectar(adjuntar=True)
-        self.fuentes["etabs"] = f
+        with self.lock:
+            f = self.fuentes.get("etabs")
+            if f is None:
+                f = conectar(adjuntar=True, solo_seleccionados=solo_seleccionados)
+                self.fuentes["etabs"] = f
+            else:
+                f.recargar(bool(solo_seleccionados))
         return f
 
     def agregar(self, fuente) -> str:
@@ -423,7 +436,7 @@ class Handler(BaseHTTPRequestHandler):
                 return _json(self, {"ok": True, "fuente_id": ident,
                                     "info": fuente.info_modelo(),
                                     "combos": fuente.listar_combos()[:50]})
-            if ruta == "/api/conectar-etabs":
+            if ruta in ("/api/conectar-etabs", "/api/recargar-etabs"):
                 from e060.etabs.com import ConexionETABSError, diagnostico_com
                 diag = diagnostico_com()
                 if not diag["com_disponible"]:
@@ -431,11 +444,26 @@ class Handler(BaseHTTPRequestHandler):
                                 codigo=("plataforma" if not diag["es_windows"]
                                         else "sin_com"))
                     return _json(self, diag, 409)
+                datos = self._json_cuerpo()
+                solo = bool(datos.get("solo_seleccionados", False))
+                if ruta == "/api/recargar-etabs" and "etabs" not in REGISTRO.fuentes:
+                    return _json(self, {"ok": False, "codigo": "sin_conexion",
+                                        "error": "Aún no hay conexión con ETABS. "
+                                                 "Pulse primero «Conectar».",
+                                        "sugerencias": [
+                                            "Abra ETABS con el modelo analizado y "
+                                            "pulse «Conectar»."]}, 409)
                 try:
-                    fuente = REGISTRO.conectar_etabs()
+                    fuente = REGISTRO.conectar_etabs(solo_seleccionados=solo)
                 except ConexionETABSError as exc:
+                    if ruta == "/api/recargar-etabs":
+                        # una recarga fallida invalida la fuente anterior
+                        REGISTRO.fuentes.pop("etabs", None)
                     return _json(self, exc.to_dict(), 409)
+                actual = REGISTRO.obtener("etabs")
                 return _json(self, {"ok": True, "fuente_id": "etabs",
+                                    "solo_seleccionados": solo,
+                                    "elementos": len(actual.listar_elementos()),
                                     "info": fuente.info_modelo()})
             return _json(self, {"error": "Ruta no encontrada"}, 404)
         except Exception as exc:                     # noqa: BLE001

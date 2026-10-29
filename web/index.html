@@ -37,7 +37,7 @@ header .sep{flex:1}
 /* ---------- sidebar ---------- */
 .sidebar{position:sticky;top:86px;max-height:calc(100vh - 104px);display:flex;flex-direction:column}
 .sidebar .cuerpo{overflow:auto;padding:12px}
-.fuente{display:flex;gap:8px;align-items:center;padding:9px 10px;border:1px solid var(--linea);
+.fuente{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:9px 10px;border:1px solid var(--linea);
   border-radius:8px;margin-bottom:8px;cursor:pointer;transition:.15s;font-size:13px}
 .fuente:hover{border-color:#9fb6d4;background:#f7fafd}
 .fuente.activa{border-color:var(--azul);background:#eef4fb;box-shadow:inset 3px 0 0 var(--azul)}
@@ -45,6 +45,9 @@ header .sep{flex:1}
 .fuente .txt{flex:1;min-width:0}
 .fuente .txt small{display:block;color:var(--gris);font-size:11px;white-space:nowrap;
   overflow:hidden;text-overflow:ellipsis}
+.acciones-etabs{display:flex;flex-basis:100%;gap:6px;margin:2px 0 0 16px;flex-wrap:wrap}
+.acciones-etabs .btn-mini{padding:3px 8px;font-size:11px}
+.nota-etabs{flex-basis:100%;color:#1f7a4d;font-size:11px;margin:2px 0 0 16px}
 .fuente.no-disp{border-style:dashed;opacity:.82;background:#fcfcfd}
 .fuente.no-disp:hover{border-color:#c9a227;background:#fffdf3}
 .fuente.no-disp .dot{background:#b7791f}
@@ -416,6 +419,23 @@ function pintarFuentes(fuentes){
       (noDisp? '<span class="badge-nodisp">no disponible</span>':'') +
       (f.conectado? '<span class="badge-nodisp" style="color:#1f7a4d;border-color:#a9d6bd;background:#eefaf3">conectado</span>':'');
     div.title = noDisp ? (f.motivo || 'No disponible en este equipo') : '';
+    if (f.id==='etabs' && f.disponible){
+      const barra = document.createElement('div');
+      barra.className = 'acciones-etabs';
+      barra.innerHTML = `
+        <button class="btn-mini" data-modo="todo">Todo el modelo</button>
+        <button class="btn-mini" data-modo="sel">Solo selección</button>`;
+      barra.querySelectorAll('button').forEach(b=>{
+        b.onclick = (ev)=>{ ev.stopPropagation(); conectarETABS(b.dataset.modo==='sel'); };
+      });
+      div.appendChild(barra);
+      if (f.conectado && f.solo_seleccionados){
+        const nota = document.createElement('small');
+        nota.className = 'nota-etabs';
+        nota.textContent = 'leyendo las barras seleccionadas en ETABS';
+        div.appendChild(nota);
+      }
+    }
     div.onclick = async ()=>{
       if (f.id==='etabs' && noDisp){
         mostrarAvisoETABS(f.motivo, f.sugerencias, true);
@@ -442,6 +462,31 @@ function pintarFuentes(fuentes){
     };
     cont.appendChild(div);
   });
+}
+/* Conexión con ETABS indicando qué barras leer. «Solo selección» permite
+   elegir el elemento en el modelo de ETABS y diseñarlo aquí. */
+async function conectarETABS(soloSeleccion){
+  const ruta = soloSeleccion ? '/api/recargar-etabs' : '/api/conectar-etabs';
+  const cuerpo = JSON.stringify({solo_seleccionados: !!soloSeleccion});
+  try{
+    mostrarMsgFuente(soloSeleccion? 'Leyendo la selección de ETABS…'
+                                  : 'Leyendo todo el modelo de ETABS…', false);
+    const r = await api(ruta,{method:'POST',
+      headers:{'Content-Type':'application/json'}, body:cuerpo});
+    estado.fuente = 'etabs';
+    $('#aviso-fuente').innerHTML = '';
+    await iniciarFuentesYLista();
+    mostrarMsgFuente(`${r.elementos} elemento(s) leído(s) de ETABS`
+      + (soloSeleccion? ' (barras seleccionadas)':' (todo el modelo)'), false);
+  }catch(err){
+    const d = err.datos || {};
+    if (d.codigo === 'sin_seleccion'){
+      mostrarAvisoETABS(d.error, d.sugerencias, false);
+    } else {
+      mostrarAvisoETABS(d.error || err.message, d.sugerencias, false);
+    }
+    mostrarMsgFuente('Sin conexión con ETABS', true);
+  }
 }
 async function iniciarFuentesYLista(){
   const e = await api('/api/estado');

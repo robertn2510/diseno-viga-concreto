@@ -18,7 +18,7 @@ servicio    : orquestador de alto nivel usado por las interfaces.
 cli         : consola (python -m e060.cli).
 """
 
-__version__ = "4.1.0"
+__version__ = "4.2.0"
 __norma__ = "NTP E.060 Concreto Armado (RNE) — ACI 318 adaptado"
 
 from . import unidades, normas, seccion, viga, columna, combinaciones  # noqa: F401
