@@ -216,3 +216,8 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# --- Salidas del programa de diseño E.060 ---
+salidas/
+memoria_fig.png
+*.tmp

@@ -1,0 +1,9 @@
+"TABLE:  Frame Assignments - Section Properties"
+"Story","Line","Frame","DesignSect","AnalysisSect"
+"Piso 1","V1-2","V1-2","VP 30x60","VP 30x60"
+"Piso 1","C1-1","C1-1","COL 45x45","COL 45x45"
+
+"TABLE:  Frame Section Properties - Rectangular"
+"PropName","Material","t3 (m)","t2 (m)"
+"VP 30x60","CONC",0.60,0.30
+"COL 45x45","CONC",0.45,0.45

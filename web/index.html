@@ -1,0 +1,785 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Diseño E.060 · Concreto Armado + ETABS</title>
+<style>
+:root{
+  --azul:#1f3864; --azul2:#2c5282; --claro:#eef2f7; --linea:#d8e0ea;
+  --texto:#1b2430; --gris:#63708a; --ok:#1f7a4d; --mal:#c0392b; --ambar:#b7791f;
+  --sombra:0 1px 3px rgba(16,32,60,.08),0 8px 24px rgba(16,32,60,.06);
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;font-family:'Segoe UI',system-ui,-apple-system,Roboto,Helvetica,Arial,sans-serif;
+     color:var(--texto);background:var(--claro);font-size:14px}
+button,input,select,textarea{font-family:inherit;font-size:14px}
+/* ---------- barra superior ---------- */
+header{background:linear-gradient(100deg,#16294a,#1f3864 60%,#2c5282);color:#fff;
+  padding:14px 22px;display:flex;align-items:center;gap:18px;flex-wrap:wrap;
+  box-shadow:0 2px 10px rgba(10,25,50,.25);position:sticky;top:0;z-index:20}
+header .marca{display:flex;align-items:center;gap:12px}
+header .logo{width:38px;height:38px;border-radius:8px;background:#fff2;display:grid;place-items:center;
+  font-weight:700;font-size:13px;letter-spacing:.5px;border:1px solid #ffffff33}
+header h1{font-size:17px;margin:0;letter-spacing:.2px}
+header .sub{font-size:12px;color:#c9d7ea}
+header .sep{flex:1}
+.pill{background:#ffffff1a;border:1px solid #ffffff2e;padding:5px 11px;border-radius:999px;font-size:12px}
+.pill b{font-weight:600}
+/* ---------- layout ---------- */
+.app{display:grid;grid-template-columns:318px 1fr;gap:18px;padding:18px;align-items:start;
+     max-width:1560px;margin:0 auto}
+@media(max-width:1000px){.app{grid-template-columns:1fr}}
+.panel{background:#fff;border:1px solid var(--linea);border-radius:12px;box-shadow:var(--sombra)}
+.panel h2{font-size:12px;text-transform:uppercase;letter-spacing:.9px;color:var(--gris);
+  margin:0;padding:13px 16px;border-bottom:1px solid var(--linea)}
+/* ---------- sidebar ---------- */
+.sidebar{position:sticky;top:86px;max-height:calc(100vh - 104px);display:flex;flex-direction:column}
+.sidebar .cuerpo{overflow:auto;padding:12px}
+.fuente{display:flex;gap:8px;align-items:center;padding:9px 10px;border:1px solid var(--linea);
+  border-radius:8px;margin-bottom:8px;cursor:pointer;transition:.15s;font-size:13px}
+.fuente:hover{border-color:#9fb6d4;background:#f7fafd}
+.fuente.activa{border-color:var(--azul);background:#eef4fb;box-shadow:inset 3px 0 0 var(--azul)}
+.fuente .dot{width:8px;height:8px;border-radius:50%;background:var(--ok);flex:none}
+.fuente .txt{flex:1;min-width:0}
+.fuente .txt small{display:block;color:var(--gris);font-size:11px;white-space:nowrap;
+  overflow:hidden;text-overflow:ellipsis}
+.buscar{display:flex;gap:6px;margin:10px 0}
+.buscar input{flex:1;padding:8px 10px;border:1px solid var(--linea);border-radius:8px;outline:none}
+.buscar input:focus{border-color:var(--azul2);box-shadow:0 0 0 3px #2c52821f}
+.chips{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap}
+.chip{padding:5px 11px;border-radius:999px;border:1px solid var(--linea);background:#fff;
+  cursor:pointer;font-size:12px;color:var(--gris)}
+.chip.activo{background:var(--azul);color:#fff;border-color:var(--azul)}
+.lista{display:flex;flex-direction:column;gap:6px}
+.item{border:1px solid var(--linea);border-radius:8px;padding:9px 10px;cursor:pointer;transition:.12s}
+.item:hover{border-color:#9fb6d4;background:#f7fafd}
+.item.activo{border-color:var(--azul);background:#eef4fb;box-shadow:inset 3px 0 0 var(--azul)}
+.item .fila1{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.item .nom{font-weight:600;font-size:13.5px}
+.item .meta{font-size:11.5px;color:var(--gris);margin-top:2px}
+.tipo{font-size:10px;padding:2px 7px;border-radius:999px;font-weight:600;letter-spacing:.3px}
+.tipo.Viga{background:#e8f1fd;color:#1c4f8a}
+.tipo.Columna{background:#fdf0e6;color:#96511a}
+.tipo.Desconocido{background:#eef0f3;color:#5a6474}
+/* ---------- main ---------- */
+.main{display:flex;flex-direction:column;gap:16px;min-width:0}
+.vacio{padding:60px 30px;text-align:center;color:var(--gris)}
+.vacio h3{color:var(--azul);margin:0 0 8px;font-size:19px}
+.vacio p{max-width:520px;margin:8px auto;line-height:1.6}
+.cabecera{padding:16px 18px;display:flex;gap:16px;align-items:center;flex-wrap:wrap;
+  border-bottom:1px solid var(--linea)}
+.cabecera .tit{font-size:19px;font-weight:700;color:var(--azul);display:flex;gap:10px;align-items:center}
+.cabecera .datos{display:flex;gap:18px;flex-wrap:wrap;color:var(--gris);font-size:12.5px}
+.cabecera .datos b{color:var(--texto);font-weight:600}
+.tabs{display:flex;gap:2px;padding:0 12px;border-bottom:1px solid var(--linea);background:#fbfcfe;
+  border-radius:12px 12px 0 0}
+.tab{padding:11px 16px;cursor:pointer;font-size:13px;color:var(--gris);border-bottom:2px solid transparent}
+.tab.activo{color:var(--azul);border-bottom-color:var(--azul);font-weight:600}
+.contenido{padding:18px}
+.grid2{display:grid;grid-template-columns:1.35fr 1fr;gap:16px}
+@media(max-width:1100px){.grid2{grid-template-columns:1fr}}
+.card{border:1px solid var(--linea);border-radius:10px;padding:14px 16px;background:#fff}
+.card h3{margin:0 0 10px;font-size:13px;text-transform:uppercase;letter-spacing:.7px;color:var(--gris)}
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+th{background:var(--azul);color:#fff;font-weight:600;padding:7px 6px;font-size:11px;
+  text-align:center;position:sticky;top:0}
+td{border-bottom:1px solid var(--linea);padding:6px;text-align:center}
+tbody tr:nth-child(even){background:#f8fafc}
+tbody tr:hover{background:#eef4fb}
+.num{font-variant-numeric:tabular-nums}
+.ok{color:var(--ok);font-weight:700}
+.mal{color:var(--mal);font-weight:700}
+.tabla-scroll{max-height:420px;overflow:auto;border:1px solid var(--linea);border-radius:8px}
+/* ---------- formulario ---------- */
+.form{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px}
+.campo label{display:block;font-size:11.5px;color:var(--gris);margin-bottom:4px;
+  text-transform:uppercase;letter-spacing:.5px}
+.campo input,.campo select{width:100%;padding:8px 9px;border:1px solid var(--linea);
+  border-radius:7px;background:#fff;outline:none}
+.campo input:focus,.campo select:focus{border-color:var(--azul2);box-shadow:0 0 0 3px #2c52821f}
+.campo.ancho{grid-column:span 2}
+.switch{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--texto);margin-top:6px}
+.botones{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+.btn{border:1px solid var(--azul);background:var(--azul);color:#fff;padding:10px 18px;
+  border-radius:8px;cursor:pointer;font-weight:600;font-size:13.5px;transition:.15s}
+.btn:hover{background:#17294a}
+.btn.sec{background:#fff;color:var(--azul)}
+.btn.sec:hover{background:#eef4fb}
+.btn[disabled]{opacity:.5;cursor:not-allowed}
+.btn.mini{padding:6px 12px;font-size:12px}
+/* ---------- KPI ---------- */
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:16px}
+.kpi{border:1px solid var(--linea);border-left:4px solid var(--azul);border-radius:8px;
+  padding:11px 13px;background:#fbfcfe}
+.kpi span{display:block;font-size:10.5px;text-transform:uppercase;letter-spacing:.7px;color:var(--gris)}
+.kpi b{display:block;font-size:17px;color:var(--azul);margin-top:3px}
+.kpi.ok{border-left-color:var(--ok)} .kpi.mal{border-left-color:var(--mal)}
+.kpi small{color:var(--gris);font-size:11px}
+.badge{display:inline-flex;align-items:center;gap:6px;padding:5px 11px;border-radius:999px;
+  font-size:12px;font-weight:600}
+.badge.ok{background:#e6f4ec;color:var(--ok)}
+.badge.mal{background:#fdecea;color:var(--mal)}
+.checks{display:flex;flex-direction:column;gap:6px}
+.check{display:flex;gap:9px;align-items:flex-start;padding:7px 9px;border-radius:7px;
+  border:1px solid var(--linea);font-size:12.5px}
+.check .ic{font-weight:700;flex:none;width:16px}
+.check.ok{background:#f4fbf7;border-color:#cbe7d7}
+.check.mal{background:#fdf5f4;border-color:#f0d2cd}
+.check small{color:var(--gris);display:block;font-size:11px;margin-top:2px}
+.aviso{background:#fff8e6;border:1px solid #f0dfae;border-left:4px solid var(--ambar);
+  padding:10px 13px;border-radius:8px;font-size:12.5px;color:#6b5211;margin:10px 0}
+.err{background:#fdecea;border-left:4px solid var(--mal);padding:10px 13px;border-radius:8px;
+  font-size:13px;margin:10px 0;white-space:pre-wrap}
+.oculto{display:none!important}
+.importar{display:grid;gap:8px;font-size:12.5px}
+.importar input[type=file]{font-size:12px}
+.importar .row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.importar label{font-size:11px;color:var(--gris);text-transform:uppercase;letter-spacing:.5px}
+.importar input[type=number],.importar select{width:100%;padding:6px 8px;border:1px solid var(--linea);border-radius:6px}
+.leyenda{display:flex;gap:14px;font-size:11.5px;color:var(--gris);margin-top:6px}
+.leyenda i{display:inline-block;width:14px;height:3px;border-radius:2px;margin-right:5px;vertical-align:middle}
+.svgbox{width:100%;overflow:hidden}
+.svgbox svg{width:100%;height:auto;display:block}
+footer{text-align:center;font-size:11.5px;color:var(--gris);padding:8px 0 26px}
+.spin{display:inline-block;width:14px;height:14px;border:2px solid #ffffff66;border-top-color:#fff;
+  border-radius:50%;animation:g .7s linear infinite;vertical-align:-2px;margin-right:7px}
+@keyframes g{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="marca">
+    <div class="logo">E.060</div>
+    <div>
+      <h1>Diseño de Concreto Armado · Vigas y Columnas</h1>
+      <div class="sub">Norma Técnica Peruana E.060 (RNE) · Integración ETABS v20 – v23</div>
+    </div>
+  </div>
+  <div class="sep"></div>
+  <div class="pill">Motor <b id="version">—</b></div>
+  <div class="pill" id="estado-servidor">Conectando…</div>
+</header>
+
+<div class="app">
+  <!-- ============ SIDEBAR ============ -->
+  <div class="panel sidebar">
+    <h2>Modelo y elementos</h2>
+    <div class="cuerpo">
+      <div id="fuentes"></div>
+
+      <details style="margin:12px 0 6px">
+        <summary style="cursor:pointer;font-size:12.5px;color:var(--azul2);font-weight:600">
+          Importar tablas de ETABS (CSV/XLSX)</summary>
+        <div class="importar" style="margin-top:10px">
+          <div><label>Element Forces – Frames *</label>
+            <input type="file" id="file-fuerzas" accept=".csv,.txt,.xlsx"></div>
+          <div><label>Secciones (opcional)</label>
+            <input type="file" id="file-secciones" accept=".csv,.txt,.xlsx"></div>
+          <div><label>Materiales (opcional)</label>
+            <input type="file" id="file-materiales" accept=".csv,.txt,.xlsx"></div>
+          <div class="row">
+            <div><label>Unidades</label>
+              <select id="unidades">
+                <option value="">Deducir del archivo</option>
+                <option value="tonf_m_C">tonf – m</option>
+                <option value="tonf_cm_C">tonf – cm</option>
+                <option value="kgf_m_C">kgf – m</option>
+                <option value="kgf_cm_C">kgf – cm</option>
+                <option value="kN_m_C">kN – m</option>
+                <option value="kN_mm_C">kN – mm</option>
+                <option value="kip_ft_F">kip – ft</option>
+              </select></div>
+            <div><label>Tipo por defecto</label>
+              <select id="tipo-defecto">
+                <option value="auto">Deducir del nombre</option>
+                <option value="Viga">Viga</option>
+                <option value="Columna">Columna</option>
+              </select></div>
+          </div>
+          <div class="row">
+            <div><label>b [cm] (si no viene)</label><input type="number" id="imp-b" placeholder="30"></div>
+            <div><label>h [cm] (si no viene)</label><input type="number" id="imp-h" placeholder="60"></div>
+          </div>
+          <button class="btn mini" id="btn-importar">Importar archivos</button>
+          <div id="importar-msg" style="font-size:11.5px;color:var(--gris)"></div>
+        </div>
+      </details>
+
+      <div class="buscar">
+        <input id="buscar" placeholder="Buscar elemento, sección o piso…">
+      </div>
+      <div class="chips" id="filtros">
+        <div class="chip activo" data-tipo="Todos">Todos</div>
+        <div class="chip" data-tipo="Viga">Vigas</div>
+        <div class="chip" data-tipo="Columna">Columnas</div>
+      </div>
+      <div class="lista" id="lista"></div>
+    </div>
+  </div>
+
+  <!-- ============ MAIN ============ -->
+  <div class="main">
+    <div class="panel" id="panel-vacio">
+      <div class="vacio">
+        <h3>Seleccione un elemento del modelo</h3>
+        <p>Elija una viga o columna en la lista de la izquierda. El programa importa
+           sus solicitaciones desde ETABS (v20 a v23), las combina según la E.060 /
+           E.030, diseña la sección y genera la memoria de cálculo.</p>
+        <p style="font-size:12.5px">Puede trabajar sin ETABS con el <b>modelo demo</b>
+           (pórtico de 4 pisos analizado por rigidez) o importando las tablas
+           <i>Element Forces – Frames</i> exportadas del programa.</p>
+      </div>
+    </div>
+
+    <div class="panel oculto" id="panel-elemento">
+      <div class="cabecera">
+        <div class="tit"><span id="el-nombre">—</span><span class="tipo" id="el-tipo">—</span></div>
+        <div class="datos" id="el-datos"></div>
+      </div>
+      <div class="tabs">
+        <div class="tab activo" data-tab="sol">Solicitaciones</div>
+        <div class="tab" data-tab="dis">Diseño E.060</div>
+        <div class="tab" data-tab="mem">Memoria de cálculo</div>
+      </div>
+      <div class="contenido">
+        <!-- ---------- solicitaciones ---------- -->
+        <div id="tab-sol">
+          <div class="grid2">
+            <div class="card">
+              <h3>Envolvente de momentos M3</h3>
+              <div class="svgbox" id="svg-envolvente"></div>
+              <div class="leyenda">
+                <span><i style="background:#1f7a4d"></i>M+ (tracción inferior)</span>
+                <span><i style="background:#c0392b"></i>M− (tracción superior)</span>
+                <span>tonf·m</span>
+              </div>
+            </div>
+            <div class="card">
+              <h3>Sección y refuerzo</h3>
+              <div class="svgbox" id="svg-seccion"></div>
+              <div id="sec-meta" style="font-size:12px;color:var(--gris);text-align:center"></div>
+            </div>
+          </div>
+          <div class="card" style="margin-top:16px">
+            <h3>Envolventes por estación</h3>
+            <div class="tabla-scroll"><table id="tabla-env"></table></div>
+            <div class="leyenda" id="combos" style="flex-wrap:wrap;margin-top:10px"></div>
+          </div>
+        </div>
+
+        <!-- ---------- diseño ---------- -->
+        <div id="tab-dis" class="oculto">
+          <div class="card">
+            <h3>Parámetros de diseño</h3>
+            <div class="form">
+              <div class="campo"><label>Tipo de elemento</label>
+                <select id="op-tipo">
+                  <option value="auto">Automático</option>
+                  <option value="Viga">Viga</option>
+                  <option value="Columna">Columna</option>
+                </select></div>
+              <div class="campo"><label>f'c [kgf/cm²]</label><input type="number" id="op-fc" value="210"></div>
+              <div class="campo"><label>fy [kgf/cm²]</label><input type="number" id="op-fy" value="4200"></div>
+              <div class="campo"><label>b [cm]</label><input type="number" id="op-b"></div>
+              <div class="campo"><label>h [cm]</label><input type="number" id="op-h"></div>
+              <div class="campo"><label>Recubrimiento [cm]</label><input type="number" id="op-rec" value="4" step="0.5"></div>
+              <div class="campo"><label>Estribo</label>
+                <select id="op-estribo">
+                  <option value="#3">3/8" (#3)</option>
+                  <option value="#4">1/2" (#4)</option>
+                </select></div>
+              <div class="campo"><label>Estaciones de diseño</label>
+                <select id="op-nest"><option>3</option><option selected>5</option><option>7</option><option>9</option></select></div>
+              <div class="campo"><label>Proyecto</label><input type="text" id="op-proyecto" placeholder="Nombre del proyecto"></div>
+              <div class="campo"><label>Ubicación</label><input type="text" id="op-ubicacion" placeholder="Ciudad / distrito"></div>
+              <div class="campo"><label>Responsable</label><input type="text" id="op-autor" placeholder="Ing. estructural"></div>
+            </div>
+            <div style="display:flex;gap:26px;flex-wrap:wrap;margin-top:14px">
+              <label class="switch"><input type="checkbox" id="op-sismico" checked>
+                Requisitos sismorresistentes (cap. 21)</label>
+              <label class="switch"><input type="checkbox" id="op-torsion" checked>
+                Considerar torsión</label>
+              <label class="switch"><input type="checkbox" id="op-esbeltez">
+                Amplificar momentos por esbeltez (10.10.7)</label>
+              <label class="switch"><input type="checkbox" id="op-capacidad" checked>
+                Cortante por capacidad (21.4.5)</label>
+            </div>
+            <div class="botones">
+              <button class="btn" id="btn-disenar">Diseñar según E.060</button>
+              <button class="btn sec" id="btn-limpiar">Limpiar resultados</button>
+            </div>
+            <div id="dis-msg"></div>
+          </div>
+          <div id="resultados" class="oculto" style="margin-top:16px"></div>
+        </div>
+
+        <!-- ---------- memoria ---------- -->
+        <div id="tab-mem" class="oculto">
+          <div class="card">
+            <h3>Memoria de cálculo</h3>
+            <p style="font-size:13px;color:var(--gris);margin-top:0">
+              Documento completo con datos, solicitaciones, fórmulas, resultados,
+              verificaciones normativas, conclusiones y anexos gráficos.</p>
+            <div class="botones" style="margin-top:10px">
+              <button class="btn" id="btn-memoria" disabled>Abrir memoria</button>
+              <button class="btn sec" id="btn-html" disabled>Descargar HTML</button>
+              <button class="btn sec" id="btn-pdf" disabled>Descargar PDF</button>
+              <button class="btn sec" id="btn-md" disabled>Descargar Markdown</button>
+            </div>
+            <div class="aviso" id="mem-aviso">Diseñe el elemento para generar la memoria.</div>
+          </div>
+          <div class="card" id="mem-preview" style="margin-top:16px;padding:0;overflow:hidden" >
+            <iframe id="mem-iframe" style="width:100%;height:780px;border:0;display:none"></iframe>
+          </div>
+        </div>
+      </div>
+    </div>
+    <footer>Sistema de diseño E.060 · Los resultados deben ser revisados por el ingeniero estructural responsable.</footer>
+  </div>
+</div>
+
+<script>
+const $ = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+const estado = {fuente:'demo', elementos:[], tipo:'Todos', elemento:null,
+                salida:null, memoria:null};
+
+const fmt = (v,d=2) => (v===null||v===undefined||isNaN(v)) ? '—'
+  : Number(v).toLocaleString('es-PE',{minimumFractionDigits:d,maximumFractionDigits:d});
+
+async function api(ruta, opciones={}) {
+  const r = await fetch(ruta, opciones);
+  const txt = await r.text();
+  let data;
+  try { data = JSON.parse(txt); } catch(e) { throw new Error(txt.slice(0,400)); }
+  if (!r.ok || data.error) throw new Error(data.error || ('Error HTTP ' + r.status));
+  return data;
+}
+
+/* =================== inicio =================== */
+async function iniciar(){
+  try{
+    const e = await api('/api/estado');
+    $('#version').textContent = 'v' + e.version;
+    $('#estado-servidor').textContent = 'En línea · ' + (e.sistema==='win32'?'Windows':'Linux');
+    pintarFuentes(e.fuentes);
+    await cargarElementos();
+  }catch(err){
+    $('#estado-servidor').textContent = 'Sin conexión';
+    $('#lista').innerHTML = '<div class="err">No se pudo conectar con el servidor: '+err.message+'</div>';
+  }
+}
+
+function pintarFuentes(fuentes){
+  const cont = $('#fuentes');
+  cont.innerHTML = '';
+  fuentes.forEach(f=>{
+    const div = document.createElement('div');
+    div.className = 'fuente' + (f.id===estado.fuente?' activa':'');
+    div.innerHTML = `<span class="dot" style="background:${f.id==='etabs'?'#b7791f':'#1f7a4d'}"></span>
+      <div class="txt"><b>${f.nombre}</b><small>${f.descripcion}</small></div>`;
+    div.onclick = async ()=>{
+      if (f.id==='etabs'){
+        try{
+          mostrarMsgFuente('Conectando con ETABS…', false);
+          const res = await api('/api/conectar-etabs',{method:'POST',
+             headers:{'Content-Type':'application/json'}, body:'{}'});
+          estado.fuente = 'etabs';
+          await iniciarFuentesYLista();
+        }catch(err){ alert('No se pudo conectar con ETABS:\n' + err.message); }
+      } else {
+        estado.fuente = f.id;
+        await iniciarFuentesYLista();
+      }
+    };
+    cont.appendChild(div);
+  });
+}
+async function iniciarFuentesYLista(){
+  const e = await api('/api/estado');
+  pintarFuentes(e.fuentes);
+  await cargarElementos();
+}
+function mostrarMsgFuente(txt, error){ $('#estado-servidor').textContent = txt; }
+
+async function cargarElementos(){
+  const texto = $('#buscar').value || '';
+  try{
+    const data = await api(`/api/elementos?fuente=${encodeURIComponent(estado.fuente)}`
+      +`&tipo=${encodeURIComponent(estado.tipo)}&texto=${encodeURIComponent(texto)}`);
+    estado.elementos = data.elementos;
+    pintarLista();
+  }catch(err){
+    $('#lista').innerHTML = '<div class="err">'+err.message+'</div>';
+  }
+}
+function pintarLista(){
+  const cont = $('#lista');
+  cont.innerHTML = '';
+  if (!estado.elementos.length){
+    cont.innerHTML = '<div style="color:var(--gris);font-size:12.5px;padding:8px">Sin elementos para el filtro.</div>';
+    return;
+  }
+  estado.elementos.forEach(el=>{
+    const d = document.createElement('div');
+    d.className='item'+(estado.elemento===el.nombre?' activo':'');
+    d.innerHTML = `<div class="fila1"><span class="nom">${el.nombre}</span>
+       <span class="tipo ${el.tipo}">${el.tipo}</span></div>
+       <div class="meta">${el.seccion||'—'} · ${el.story||'—'} · L=${fmt(el.L/100,2)} m</div>`;
+    d.onclick = ()=> seleccionar(el.nombre);
+    cont.appendChild(d);
+  });
+}
+
+/* =================== selección =================== */
+async function seleccionar(nombre){
+  estado.elemento = nombre;
+  estado.salida = null; estado.memoria = null;
+  pintarLista();
+  try{
+    const el = await api(`/api/elemento?fuente=${estado.fuente}&nombre=${encodeURIComponent(nombre)}`);
+    estado.datos = el;
+    $('#panel-vacio').classList.add('oculto');
+    $('#panel-elemento').classList.remove('oculto');
+    $('#el-nombre').textContent = el.nombre;
+    $('#el-tipo').textContent = el.tipo;
+    $('#el-tipo').className = 'tipo '+el.tipo;
+    $('#el-datos').innerHTML = `
+      <span><b>${fmt(el.b,0)} × ${fmt(el.h,0)} cm</b> (${el.seccion||'—'})</span>
+      <span>Nivel: <b>${el.story||'—'}</b></span>
+      <span>Longitud: <b>${fmt(el.L/100,2)} m</b></span>
+      <span>f'c = <b>${fmt(el.fc,0)}</b> kgf/cm² · fy = <b>${fmt(el.fy,0)}</b> kgf/cm²</span>
+      <span>Combinaciones: <b>${el.combos.length}</b></span>
+      <span style="color:#8a97ab">${el.origen||''}</span>`;
+    $('#op-b').value = Math.round(el.b); $('#op-h').value = Math.round(el.h);
+    $('#op-fc').value = Math.round(el.fc); $('#op-fy').value = Math.round(el.fy);
+    $('#op-tipo').value = 'auto';
+    $('#resultados').classList.add('oculto');
+    $('#dis-msg').innerHTML='';
+    actualizarMemoria(null);
+    dibujarEnvolvente(el);
+    dibujarSeccion(el);
+    pintarTablaEnv(el);
+    cambiarTab('sol');
+  }catch(err){ alert(err.message); }
+}
+
+function pintarTablaEnv(el){
+  const envs = el.envolventes;
+  let h = `<thead><tr><th>Estación [m]</th><th>M3+ [t·m]</th><th>M3− [t·m]</th>
+           <th>V2 [t]</th><th>T [t·m]</th><th>P [t]</th></tr></thead><tbody>`;
+  envs.forEach(e=>{
+    h += `<tr><td class="num">${fmt(e.estacion/100,2)}</td>
+      <td class="num">${fmt(e.Mu_pos)}</td><td class="num">${fmt(e.Mu_neg)}</td>
+      <td class="num">${fmt(e.Vu)}</td><td class="num">${fmt(e.Tu)}</td>
+      <td class="num">${fmt(e.Pu)}</td></tr>`;
+  });
+  h += '</tbody>';
+  $('#tabla-env').innerHTML = h;
+  $('#combos').innerHTML = '<span style="color:var(--gris)">Combinaciones:</span> ' +
+    el.combos.map(c=>`<span class="chip" style="cursor:default">${c}</span>`).join('');
+}
+
+/* =================== gráficos =================== */
+function dibujarEnvolvente(el){
+  const envs = el.envolventes;
+  const W=620, H=300, ml=54, mr=16, mt=18, mb=40;
+  const pw=W-ml-mr, ph=H-mt-mb;
+  if(!envs.length){ $('#svg-envolvente').innerHTML=''; return; }
+  const L = el.L || Math.max(...envs.map(e=>e.estacion));
+  let mMax = Math.max(0.001, ...envs.map(e=>Math.max(e.Mu_pos, -e.Mu_neg)));
+  mMax *= 1.15;
+  const px = x => ml + (x/L)*pw;
+  const py = m => mt + ph/2 - (m/mMax)*(ph/2);
+  const ptsPos = envs.map(e=>`${px(e.estacion).toFixed(1)},${py(e.Mu_pos).toFixed(1)}`).join(' ');
+  const ptsNeg = envs.map(e=>`${px(e.estacion).toFixed(1)},${py(e.Mu_neg).toFixed(1)}`).join(' ');
+  const areaPos = `M${px(envs[0].estacion)},${py(0)} L${ptsPos.replace(/ /g,' L')} L${px(envs[envs.length-1].estacion)},${py(0)} Z`;
+  const areaNeg = `M${px(envs[0].estacion)},${py(0)} L${ptsNeg.replace(/ /g,' L')} L${px(envs[envs.length-1].estacion)},${py(0)} Z`;
+  let g = '';
+  for(let i=0;i<=4;i++){
+    const yy = mt + ph*i/4, val = mMax*(1 - i/2);
+    g += `<line x1="${ml}" y1="${yy}" x2="${ml+pw}" y2="${yy}" stroke="#e9eef4"/>
+          <text x="${ml-8}" y="${yy+3}" font-size="9.5" fill="#8a97ab" text-anchor="end">${val.toFixed(0)}</text>`;
+  }
+  let svg = `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">
+    <rect x="${ml}" y="${mt}" width="${pw}" height="${ph}" fill="#fbfcfe" stroke="#dde5ee"/>
+    ${g}
+    <line x1="${ml}" y1="${py(0)}" x2="${ml+pw}" y2="${py(0)}" stroke="#8a97ab"/>
+    <path d="${areaPos}" fill="#1f7a4d22" stroke="none"/>
+    <path d="${areaNeg}" fill="#c0392b22" stroke="none"/>
+    <polyline points="${ptsPos}" fill="none" stroke="#1f7a4d" stroke-width="2.2"/>
+    <polyline points="${ptsNeg}" fill="none" stroke="#c0392b" stroke-width="2.2"/>
+    <line x1="${ml}" y1="${mt+ph}" x2="${ml+pw}" y2="${mt+ph}" stroke="#1f3864"/>
+    <text x="${ml}" y="${H-16}" font-size="9.5" fill="#8a97ab">0.00</text>
+    <text x="${ml+pw}" y="${H-16}" font-size="9.5" fill="#8a97ab" text-anchor="end">${fmt(L/100,2)} m</text>
+    <text x="${ml+pw/2}" y="${H-4}" font-size="10" fill="#63708a" text-anchor="middle">x [m]</text>
+    <text x="12" y="${mt+ph/2}" font-size="9.5" fill="#63708a"
+      transform="rotate(-90 12 ${mt+ph/2})" text-anchor="middle">M3 [t·m]</text>
+  </svg>`;
+  $('#svg-envolvente').innerHTML = svg;
+}
+
+function dibujarSeccion(el, barras){
+  const W=360, H=300;
+  const b = el.b, h = el.h;
+  const esc = Math.min((W-120)/Math.max(b,1), (H-90)/Math.max(h,1), 4.2);
+  const w=b*esc, hh=h*esc, cx=W/2, cy=H/2, x0=cx-w/2, y0=cy-hh/2;
+  let svg = `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">
+    <rect x="${x0}" y="${y0}" width="${w}" height="${hh}" fill="#e7edf5" stroke="#1f3864" stroke-width="1.6"/>
+    <rect x="${x0+6}" y="${y0+6}" width="${w-12}" height="${hh-12}" fill="none"
+      stroke="#c0392b" stroke-width="1.3" stroke-dasharray="5,3"/>`;
+  const pos = (barras && barras.posiciones) ? barras.posiciones : null;
+  const db0 = (barras && barras.db) ? barras.db : 1.905;
+  if (pos){
+    pos.forEach(p=>{
+      const [bx,by,db] = p;
+      const r = Math.max(2.6, db*esc/2);
+      svg += `<circle cx="${cx+bx*esc}" cy="${cy-by*esc}" r="${r}" fill="#1f3864"/>`;
+    });
+  } else {
+    const n = el.tipo==='Columna' ? 3 : 2;
+    [[-1,-1],[1,-1],[-1,1],[1,1]].forEach(([sx,sy])=>{
+      const bx = sx*(b/2-5.5), by = sy*(h/2-5.5);
+      svg += `<circle cx="${cx+bx*esc}" cy="${cy-by*esc}" r="${Math.max(2.6, db0*esc/2)}" fill="#1f3864"/>`;
+    });
+  }
+  svg += `<text x="${cx}" y="${y0+hh+22}" font-size="11" fill="#1f3864" text-anchor="middle">b = ${fmt(b,0)} cm</text>
+    <text x="${x0+w+18}" y="${cy}" font-size="11" fill="#1f3864" text-anchor="middle"
+      transform="rotate(90 ${x0+w+18} ${cy})">h = ${fmt(h,0)} cm</text>
+  </svg>`;
+  $('#svg-seccion').innerHTML = svg;
+  $('#sec-meta').textContent = barras ? barras.descripcion : 'Refuerzo esquemático (diseñe para definir barras)';
+}
+
+/* =================== diseño =================== */
+async function disenar(){
+  if(!estado.elemento) return;
+  const btn = $('#btn-disenar');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spin"></span>Diseñando…';
+  $('#dis-msg').innerHTML = '';
+  const opciones = {
+    tipo: $('#op-tipo').value,
+    fc: parseFloat($('#op-fc').value),
+    fy: parseFloat($('#op-fy').value),
+    b: parseFloat($('#op-b').value),
+    h: parseFloat($('#op-h').value),
+    recubrimiento: parseFloat($('#op-rec').value),
+    db_estribo: $('#op-estribo').value,
+    n_estaciones: parseInt($('#op-nest').value),
+    sismico: $('#op-sismico').checked,
+    considerar_torsion: $('#op-torsion').checked,
+    amplificar_esbeltez: $('#op-esbeltez').checked,
+    proyecto: $('#op-proyecto').value,
+    ubicacion: $('#op-ubicacion').value,
+    autor: $('#op-autor').value,
+  };
+  try{
+    const res = await api('/api/disenar',{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({fuente:estado.fuente, nombre:estado.elemento, opciones})
+    });
+    estado.salida = res;
+    pintarResultados(res);
+    actualizarMemoria(res);
+    cambiarTab('dis');
+  }catch(err){
+    $('#dis-msg').innerHTML = '<div class="err">'+err.message+'</div>';
+  }finally{
+    btn.disabled=false; btn.textContent = 'Diseñar según E.060';
+  }
+}
+
+function pintarResultados(res){
+  const cont = $('#resultados');
+  cont.classList.remove('oculto');
+  let html = '';
+  const ok = res.aprobado;
+  html += `<div class="card">
+    <h3>Resultado del diseño ${ok?'<span class="badge ok" style="float:right">CUMPLE E.060</span>'
+      :'<span class="badge mal" style="float:right">REVISAR</span>'}</h3>`;
+
+  if (res.tipo === 'Viga'){
+    const v = res.vigas, c = v.corte;
+    html += `<div class="kpis">
+      <div class="kpi"><span>Sección</span><b>${fmt(res.elemento.b,0)}×${fmt(res.elemento.h,0)}</b>
+        <small>cm</small></div>
+      <div class="kpi"><span>Refuerzo inferior</span><b>${v.filas.reduce((a,f)=>f.As_pos>a.As_pos?f:a,v.filas[0]).ref_pos}</b>
+        <small>máx. As = ${fmt(Math.max(...v.filas.map(f=>f.As_pos)))} cm²</small></div>
+      <div class="kpi"><span>Refuerzo superior</span><b>${v.filas.reduce((a,f)=>f.As_neg>a.As_neg?f:a,v.filas[0]).ref_neg}</b>
+        <small>máx. As = ${fmt(Math.max(...v.filas.map(f=>f.As_neg)))} cm²</small></div>
+      <div class="kpi"><span>Estribos</span><b>${c.estribo} @ ${fmt(c.s_conf,0)}</b>
+        <small>${fmt(c.s_resto,0)} cm en el resto</small></div>
+      <div class="kpi ${c.dcr<=1?'ok':'mal'}"><span>D/C corte</span><b>${fmt(c.dcr)}</b>
+        <small>φVn = ${fmt(c.phiVn)} t · Vu = ${fmt(c.Vu_conf)} t</small></div>
+    </div>`;
+    html += `<div class="tabla-scroll"><table><thead><tr>
+      <th>Estación</th><th>Mu+ [t·m]</th><th>Refuerzo +</th><th>φMn+ [t·m]</th>
+      <th>Mu− [t·m]</th><th>Refuerzo −</th><th>φMn− [t·m]</th><th>D/C</th></tr></thead><tbody>`;
+    v.filas.forEach(f=>{
+      html += `<tr><td>${f.estacion}</td>
+        <td class="num">${fmt(f.Mu_pos)}</td><td><b>${f.ref_pos}</b></td><td class="num">${fmt(f.phiMn_pos)}</td>
+        <td class="num">${fmt(f.Mu_neg)}</td><td><b>${f.ref_neg}</b></td><td class="num">${fmt(f.phiMn_neg)}</td>
+        <td class="num ${f.dcr<=1?'ok':'mal'}">${fmt(f.dcr)}</td></tr>`;
+    });
+    html += `</tbody></table></div>
+      <div class="leyenda" style="margin-top:10px">
+        <span>Vc = ${fmt(c.Vc)} t · φ = ${fmt(c.phi,2)} · ${c.vc_cero?
+          'Vc = 0 en zona de confinamiento (21.4.5.2)':'Vc considerado'}</span>
+        <span>Av = ${fmt(c.Av,3)} cm² (${c.ramas} ramas)</span>
+      </div>`;
+  } else {
+    const c = res.columnas;
+    html += `<div class="kpis">
+      <div class="kpi"><span>Refuerzo longitudinal</span><b>${c.barras.n} Ø ${fmt(c.barras.db*10,0)} mm</b>
+        <small>${c.barras.nx} × ${c.barras.ny} por cara</small></div>
+      <div class="kpi"><span>Cuantía ρ</span><b>${fmt(c.rho*100)} %</b>
+        <small>As = ${fmt(c.As)} cm²</small></div>
+      <div class="kpi ${c.dcr<=1?'ok':'mal'}"><span>D/C biaxial</span><b>${fmt(c.dcr,3)}</b>
+        <small>Pu = ${fmt(c.Pu)} t · M3 = ${fmt(c.Mux)} t·m</small></div>
+      <div class="kpi"><span>Estribos</span><b>${c.estribos}</b>
+        <small>fuera de confinamiento @ ${fmt(c.s_ext,0)} cm</small></div>
+      <div class="kpi ${c.esbeltez.esbelto?'mal':'ok'}"><span>Esbeltez</span>
+        <b>${fmt(c.esbeltez.klu_r,1)}</b><small>límite ${fmt(c.esbeltez.limite,1)}</small></div>
+    </div>`;
+    html += `<div class="tabla-scroll"><table><thead><tr>
+      <th>Combinación</th><th>P [t]</th><th>M2 [t·m]</th><th>M3 [t·m]</th></tr></thead><tbody>`;
+    c.demandas.slice(0,20).forEach(d=>{
+      html += `<tr><td>${d.combo}</td><td class="num">${fmt(d.P)}</td>
+        <td class="num">${fmt(d.M2)}</td><td class="num">${fmt(d.M3)}</td></tr>`;
+    });
+    html += `</tbody></table></div>`;
+    setTimeout(()=>{
+      if (c.barras.posiciones) dibujarSeccion(res.elemento, c.barras);
+      if (c.diagramas && c.diagramas[0]) dibujarInteraccion(c.diagramas[0], c.demandas, 'M3');
+    }, 30);
+  }
+
+  if (res.tipo === 'Viga' && res.vigas && res.vigas.barras){
+    setTimeout(()=>dibujarSeccion(res.elemento, res.vigas.barras), 40);
+  }
+  // verificaciones
+  html += `<h3 style="margin-top:18px">Verificaciones normativas</h3><div class="checks">`;
+  res.verificaciones.forEach(v=>{
+    html += `<div class="check ${v.cumple?'ok':'mal'}">
+      <span class="ic">${v.cumple?'✓':'✕'}</span>
+      <div><b>${v.nombre}</b><small>Valor: ${typeof v.valor==='number'?fmt(v.valor,3):v.valor}
+        · Límite: ${typeof v.limite==='number'?fmt(v.limite,3):(v.limite??'—')}
+        ${v.ref?' · '+v.ref:''}</small></div></div>`;
+  });
+  html += `</div></div>`;
+  html += `<div class="card oculto" id="card-interaccion" style="margin-top:16px">
+     <h3>Diagrama de interacción</h3><div class="svgbox" id="svg-interaccion"></div></div>`;
+  cont.innerHTML = html;
+  if (res.tipo==='Columna' && res.columnas.diagramas && res.columnas.diagramas[0]){
+    const card = document.getElementById('card-interaccion');
+    if (card) card.classList.remove('oculto');
+    setTimeout(()=>dibujarInteraccion(res.columnas.diagramas[0], res.columnas.demandas,'M3'),60);
+  }
+}
+
+function dibujarInteraccion(diag, demandas, eje){
+  const W=560,H=340,ml=60,mr=16,mt=16,mb=42;
+  const pw=W-ml-mr, ph=H-mt-mb;
+  const P=diag.P, M=diag.M;
+  const mMax = Math.max(...M, ...demandas.map(d=>Math.abs(eje==='M3'?d.M3:d.M2)), 1)*1.15;
+  const pMax = Math.max(...P, 1), pMin = Math.min(...P, 0);
+  const px = m => ml + (Math.abs(m)/mMax)*pw;
+  const py = p => mt + ph - ((p-pMin)/(pMax-pMin || 1))*ph;
+  let grad = '';
+  for(let i=0;i<=4;i++){
+    const y = mt+ph*i/4;
+    grad += `<line x1="${ml}" y1="${y}" x2="${ml+pw}" y2="${y}" stroke="#e9eef4"/>
+      <text x="${ml-7}" y="${y+3}" font-size="9.5" fill="#8a97ab" text-anchor="end">
+      ${(pMax-(pMax-pMin)*i/4).toFixed(0)}</text>`;
+  }
+  const pts = P.map((p,i)=>`${px(M[i]).toFixed(1)},${py(p).toFixed(1)}`).join(' ');
+  let dem = '';
+  demandas.forEach(d=>{
+    const p = d.P, m = Math.abs(eje==='M3'?d.M3:d.M2);
+    if (p>=pMin && p<=pMax) dem += `<circle cx="${px(m)}" cy="${py(p)}" r="3.4" fill="#c0392b"/>`;
+  });
+  $('#svg-interaccion').innerHTML = `<svg viewBox="0 0 ${W} ${H}">
+    <rect x="${ml}" y="${mt}" width="${pw}" height="${ph}" fill="#fbfcfe" stroke="#dde5ee"/>
+    ${grad}
+    <polyline points="${pts}" fill="none" stroke="#1f3864" stroke-width="2.2"/>
+    ${dem}
+    <line x1="${ml}" y1="${mt+ph}" x2="${ml+pw}" y2="${mt+ph}" stroke="#1f3864"/>
+    <text x="${ml+pw/2}" y="${H-8}" font-size="10" fill="#63708a" text-anchor="middle">φMn ${eje} [t·m]</text>
+    <text x="14" y="${mt+ph/2}" font-size="10" fill="#63708a" text-anchor="middle"
+      transform="rotate(-90 14 ${mt+ph/2})">φPn [t]</text>
+    <text x="${ml+pw-4}" y="${mt+14}" font-size="10" fill="#c0392b" text-anchor="end">● solicitudes</text>
+  </svg>`;
+}
+
+/* =================== memoria =================== */
+function actualizarMemoria(res){
+  const id = res ? res.memoria_id : null;
+  estado.memoria = id;
+  const habilitado = !!id;
+  ['#btn-memoria','#btn-html','#btn-pdf','#btn-md'].forEach(s=>$(s).disabled = !habilitado);
+  $('#mem-aviso').classList.toggle('oculto', habilitado);
+  $('#mem-iframe').style.display='none';
+  if (id){
+    $('#mem-iframe').src = '/memoria/'+id;
+    $('#mem-iframe').style.display='block';
+  }
+}
+function descargar(formato){
+  if(!estado.memoria) return;
+  window.open(`/memoria/${estado.memoria}/${formato}`, '_blank');
+}
+
+/* =================== eventos =================== */
+function cambiarTab(id){
+  $$('.tab').forEach(t=>t.classList.toggle('activo', t.dataset.tab===id));
+  ['sol','dis','mem'].forEach(t=>$('#tab-'+t).classList.toggle('oculto', t!==id));
+}
+$$('.tab').forEach(t=> t.onclick = ()=>cambiarTab(t.dataset.tab));
+$$('#filtros .chip').forEach(c=> c.onclick = ()=>{
+  $$('#filtros .chip').forEach(x=>x.classList.remove('activo'));
+  c.classList.add('activo'); estado.tipo = c.dataset.tipo; cargarElementos();
+});
+$('#buscar').addEventListener('input', ()=>{
+  clearTimeout(estado._t); estado._t = setTimeout(cargarElementos, 250);
+});
+$('#btn-disenar').onclick = disenar;
+$('#btn-limpiar').onclick = ()=>{
+  $('#resultados').classList.add('oculto'); $('#dis-msg').innerHTML='';
+  actualizarMemoria(null);
+};
+$('#btn-memoria').onclick = ()=> window.open('/memoria/'+estado.memoria,'_blank');
+$('#btn-html').onclick = ()=> descargar('html');
+$('#btn-pdf').onclick = ()=> descargar('pdf');
+$('#btn-md').onclick = ()=> descargar('md');
+
+$('#btn-importar').onclick = async ()=>{
+  const f1 = $('#file-fuerzas').files[0];
+  if(!f1){ $('#importar-msg').textContent = 'Seleccione el archivo de fuerzas.'; return; }
+  const fd = new FormData();
+  fd.append('fuerzas', f1);
+  if ($('#file-secciones').files[0]) fd.append('secciones', $('#file-secciones').files[0]);
+  if ($('#file-materiales').files[0]) fd.append('materiales', $('#file-materiales').files[0]);
+  fd.append('unidades', $('#unidades').value);
+  fd.append('tipo_defecto', $('#tipo-defecto').value);
+  if ($('#imp-b').value) fd.append('b', $('#imp-b').value);
+  if ($('#imp-h').value) fd.append('h', $('#imp-h').value);
+  $('#importar-msg').textContent = 'Importando…';
+  try{
+    const res = await fetch('/api/importar',{method:'POST', body:fd});
+    const data = await res.json();
+    if (!res.ok || data.error) throw new Error(data.error||'Error al importar');
+    estado.fuente = data.fuente_id;
+    $('#importar-msg').textContent = `Importado: ${data.info.elementos} elementos, `
+      + `${data.combos.length} combinaciones.`;
+    await iniciarFuentesYLista();
+  }catch(err){ $('#importar-msg').textContent = 'Error: '+err.message; }
+};
+
+iniciar();
+</script>
+</body>
+</html>

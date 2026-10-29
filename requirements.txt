@@ -1,0 +1,20 @@
+# ---------------------------------------------------------------------------
+# Dependencias del sistema de diseño E.060 + ETABS
+#
+# El MOTOR DE CÁLCULO y la INTERFAZ WEB no requieren ninguna dependencia:
+# funcionan con la biblioteca estándar de Python 3.8 o superior.
+#
+# Las siguientes son OPCIONALES según el uso:
+# ---------------------------------------------------------------------------
+
+# Memoria de cálculo en PDF
+# reportlab>=3.6
+
+# Figuras dentro del PDF (convierte los SVG de la memoria)
+# svglib>=1.5
+
+# Lectura de tablas de ETABS exportadas a Excel (.xlsx)
+# openpyxl>=3.0
+
+# Conexión COM/OAPI con ETABS v20–v23 (solo Windows, Python de 64 bits)
+# comtypes>=1.1.10
