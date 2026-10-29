@@ -34,7 +34,7 @@ git clone <repositorio>
 cd diseno-viga-concreto
 
 # El motor no requiere dependencias externas (solo biblioteca estándar de Python 3.8+)
-python -m unittest discover -s tests -v     # verificación del motor (62 pruebas)
+python -m unittest discover -s tests -v     # verificación del motor (64 pruebas)
 ```
 
 Dependencias **opcionales**:
@@ -114,6 +114,22 @@ python puente_etabs.py --seleccionados --subir https://<servidor>:8000
 
 Al terminar, la fuente aparece en la interfaz y basta seleccionar el elemento
 para diseñarlo y descargar su memoria.
+
+**Sin escribir comandos (recomendado):** en la interfaz, la tarjeta
+*ETABS en ejecución* está siempre activa. Al pulsarla se abre el panel de
+conexión, que:
+
+1. entrega un **paquete `.zip`** (`/descargas/puente.zip`) con el puente, los
+   módulos que necesita y dos archivos `SUBIR_seleccion.bat` / `SUBIR_todo.bat`
+   **con la dirección de esta interfaz ya escrita**;
+2. muestra el comando equivalente, con botón para copiarlo;
+3. **espera la conexión**: cuando el puente envía las tablas, la interfaz
+   detecta la fuente nueva, la selecciona sola y avisa («Conectado: N
+   elementos»).
+
+Así la tarjeta de ETABS nunca es un callejón sin salida: en Windows conecta por
+COM y, si la interfaz corre en otro equipo, conecta con el ETABS de tu PC en
+tres pasos (descargar, ejecutar, listo).
 
 ### 3.6 Línea de comandos
 
@@ -234,6 +250,16 @@ API llevan el código para poder automatizar.
 La app de escritorio verifica antes de conectar y, si no es posible, ofrece
 importar las tablas en el mismo diálogo.
 
+Rutas de la API para quien quiera automatizarlo:
+
+| Ruta | Para qué |
+|---|---|
+| `GET /api/puente` | URL pública de la interfaz, comando del puente, ruta de descarga y fuentes cargadas |
+| `GET /descargas/puente.zip` | paquete listo para ejecutar en el Windows con ETABS (incluye los `.bat` con la URL) |
+| `POST /api/importar` | multipart con las tablas (es lo que usa el puente) |
+| `POST /api/conectar-etabs` | conexión COM (`{"solo_seleccionados": true}` para la selección) |
+| `POST /api/recargar-etabs` | relee las tablas sin reconectar (tras cambiar la selección en ETABS) |
+
 ### 4.4 Si la interfaz corre en Linux/macOS
 
 La automatización COM no existe fuera de Windows, así que el programa **no
@@ -244,7 +270,7 @@ panel lateral. `POST /api/conectar-etabs` responde `409` con el diagnóstico.
 | Situación | Cómo trabajar |
 |---|---|
 | Windows con ETABS abierto | App de escritorio o web local → **Conectar ETABS** (COM/OAPI). |
-| Interfaz web en Linux/macOS | **Puente** `puente_etabs.py` en el Windows de ETABS (envía los CSV por HTTP) o **Importar tablas**. |
+| Interfaz web en Linux/macOS | Tarjeta **ETABS** → *Conectar con mi ETABS*: descarga el puente, ejecútalo en el Windows de ETABS y la interfaz lo detecta sola. Alternativa: **Importar tablas**. |
 | Sin ETABS (pruebas, docencia) | **Modelo demo** o los CSV de `ejemplos/`. |
 
 **Solución de problemas**

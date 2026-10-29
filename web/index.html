@@ -48,6 +48,19 @@ header .sep{flex:1}
 .acciones-etabs{display:flex;flex-basis:100%;gap:6px;margin:2px 0 0 16px;flex-wrap:wrap}
 .acciones-etabs .btn-mini{padding:3px 8px;font-size:11px}
 .nota-etabs{flex-basis:100%;color:#1f7a4d;font-size:11px;margin:2px 0 0 16px}
+.badge-nodisp.ok{color:#1f7a4d;border-color:#a9d6bd;background:#eefaf3}
+.fuente.con-puente{border-color:#e3cf8e;background:#fffdf5}
+.fuente.con-puente:hover{border-color:#c9a227;background:#fff9e6}
+.fuente.con-puente .dot{background:#b7791f}
+.fuente.con-puente .acciones-etabs .btn-mini{border-color:#b7791f;color:#8a6d1f}
+.fuente.con-puente .acciones-etabs .btn-mini:hover{background:#b7791f;color:#fff}
+.aviso ol.pasos-puente{margin:6px 0 8px 18px;padding:0}
+.aviso ol.pasos-puente li{margin-bottom:5px;line-height:1.45}
+.aviso code.cmd{display:block;padding:7px 8px;background:#fff;border:1px solid #e3cf8e;
+  border-radius:6px;font-size:11.5px;word-break:break-all;color:#4a3c12}
+.aviso .fila-botones{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 0}
+.estado-puente{font-size:11.5px;color:#7a5c00;margin:8px 0 0}
+.estado-puente.ok{color:#1f7a4d;font-weight:600}
 .fuente.no-disp{border-style:dashed;opacity:.82;background:#fcfcfd}
 .fuente.no-disp:hover{border-color:#c9a227;background:#fffdf3}
 .fuente.no-disp .dot{background:#b7791f}
@@ -369,7 +382,8 @@ footer{text-align:center;font-size:11.5px;color:var(--gris);padding:8px 0 26px}
 const $ = s => document.querySelector(s);
 const $$ = s => [...document.querySelectorAll(s)];
 const estado = {fuente:'demo', elementos:[], tipo:'Todos', elemento:null,
-                salida:null, memoria:null, avisoEtabsVisto:false};
+                salida:null, memoria:null, avisoEtabsVisto:false,
+                puente:null, esperaPuente:null, fuentesConocidas:[]};
 
 const fmt = (v,d=2) => (v===null||v===undefined||isNaN(v)) ? '—'
   : Number(v).toLocaleString('es-PE',{minimumFractionDigits:d,maximumFractionDigits:d});
@@ -395,9 +409,9 @@ async function iniciar(){
     $('#estado-servidor').textContent = 'En línea · ' + (e.sistema==='win32'?'Windows':'Linux');
     pintarFuentes(e.fuentes);
     // Si el servidor no es Windows, se informa una sola vez y sin obstruir.
-    if (e.etabs && e.etabs.es_windows === false && !estado.avisoEtabsVisto){
+    if (e.etabs && e.etabs.com_disponible === false && !estado.avisoEtabsVisto){
       estado.avisoEtabsVisto = true;
-      mostrarAvisoETABS(e.etabs.motivo, e.etabs.sugerencias, true);
+      mostrarPanelPuente();          // ofrece el camino que sí funciona
     }
     await cargarElementos();
   }catch(err){
@@ -412,13 +426,19 @@ function pintarFuentes(fuentes){
   fuentes.forEach(f=>{
     const noDisp = f.id==='etabs' && f.disponible === false;
     const div = document.createElement('div');
-    div.className = 'fuente' + (f.id===estado.fuente?' activa':'') + (noDisp?' no-disp':'');
+    const conPuente = f.id==='etabs' && noDisp;
+    div.className = 'fuente' + (f.id===estado.fuente?' activa':'')
+      + (conPuente?' con-puente':'');
     const color = f.id==='etabs' ? (f.conectado?'#1f7a4d':'#b7791f') : '#1f7a4d';
+    const badge = f.id!=='etabs' ? ''
+      : (f.conectado ? '<span class="badge-nodisp ok">conectado</span>'
+         : (noDisp ? '<span class="badge-nodisp">conectar desde tu PC</span>'
+                   : '<span class="badge-nodisp">disponible</span>'));
     div.innerHTML = `<span class="dot" style="background:${color}"></span>
       <div class="txt"><b>${f.nombre}</b><small>${f.descripcion}</small></div>` +
-      (noDisp? '<span class="badge-nodisp">no disponible</span>':'') +
-      (f.conectado? '<span class="badge-nodisp" style="color:#1f7a4d;border-color:#a9d6bd;background:#eefaf3">conectado</span>':'');
-    div.title = noDisp ? (f.motivo || 'No disponible en este equipo') : '';
+      badge;
+    div.title = noDisp ? 'Conexión directa solo en Windows: use el puente (se descarga aquí)'
+                       : '';
     if (f.id==='etabs' && f.disponible){
       const barra = document.createElement('div');
       barra.className = 'acciones-etabs';
@@ -436,9 +456,18 @@ function pintarFuentes(fuentes){
         div.appendChild(nota);
       }
     }
+    if (f.id==='etabs' && noDisp){
+      const barra = document.createElement('div');
+      barra.className = 'acciones-etabs';
+      barra.innerHTML = '<button class="btn-mini" data-modo="puente">Conectar con mi ETABS ▸</button>';
+      barra.querySelector('button').onclick = (ev)=>{
+        ev.stopPropagation(); mostrarPanelPuente();
+      };
+      div.appendChild(barra);
+    }
     div.onclick = async ()=>{
       if (f.id==='etabs' && noDisp){
-        mostrarAvisoETABS(f.motivo, f.sugerencias, true);
+        mostrarPanelPuente();
         return;
       }
       if (f.id==='etabs'){
@@ -520,6 +549,146 @@ function mostrarAvisoETABS(motivo, sugerencias, informativo){
     const det = document.querySelector('details');
     if (det){ det.open = true; det.scrollIntoView({behavior:'smooth', block:'center'}); }
   };
+}
+
+/* =====================================================================
+   Puente ETABS: la conexión directa por COM solo existe en Windows, así que
+   cuando esta interfaz corre en otro equipo se ofrece el camino que sí
+   funciona: un paquete que se ejecuta en la PC con ETABS y envía las tablas
+   por HTTP a esta misma página. El panel espera la llegada de la fuente y la
+   selecciona solo.
+   ===================================================================== */
+async function mostrarPanelPuente(){
+  const cont = $('#aviso-fuente');
+  if(!cont) return;
+  cont.innerHTML = '<div class="aviso informativo"><b>Buscando la conexión con tu ETABS…</b></div>';
+  let info;
+  try{
+    info = await api('/api/puente');
+  }catch(err){
+    cont.innerHTML = `<div class="aviso informativo"><b>No se pudo preparar el puente</b>
+      <p>${esc(err.message)}</p></div>`;
+    return;
+  }
+  estado.puente = info;
+  estado.fuentesConocidas = info.fuentes || [];
+  const comando = info.comando;
+  const enWindows = info.es_windows && info.com_disponible;
+  cont.innerHTML = `<div class="aviso informativo">
+      <button class="cerrar" title="Cerrar" onclick="cerrarPanelPuente()">×</button>
+      <b>Conectar con el ETABS de tu PC</b>
+      <p style="margin:4px 0 6px">La lectura directa por COM/OAPI solo existe en
+         Windows, así que el puente lee tu modelo allí y lo envía a esta página.
+         No hay que copiar archivos.</p>
+      <ol class="pasos-puente">
+        <li>Descarga y descomprime el paquete en la PC con ETABS.</li>
+        <li>Ejecuta <code>SUBIR_seleccion.bat</code> (barras seleccionadas) o
+            <code>SUBIR_todo.bat</code> (todo el modelo).</li>
+        <li>Esta ventana detecta la conexión y elige la fuente sola.</li>
+      </ol>
+      <p class="fila-botones">
+        <button class="btn-mini" id="btn-descargar-puente">Descargar puente (.zip)</button>
+        <button class="btn-mini" id="btn-comprobar-puente">Comprobar ahora</button>
+        <button class="btn-mini" id="btn-ir-importar">Importar tablas ▸</button>
+      </p>
+      <details style="margin-top:6px">
+        <summary style="cursor:pointer;font-size:11.5px;color:#8a6d1f">
+          Prefiero ejecutarlo desde la consola</summary>
+        <p style="margin:5px 0 4px" class="fila-botones">
+          <code class="cmd">${esc(comando)}</code></p>
+        <button class="btn-mini" id="btn-copiar-puente">Copiar comando</button>
+      </details>
+      <p class="estado-puente" id="estado-puente">
+        ${enWindows ? 'ETABS puede conectarse en este mismo equipo: pulse «Conectar».'
+                    : 'Esperando la conexión desde tu PC…'}
+      </p>
+    </div>`;
+
+  const descargar = document.getElementById('btn-descargar-puente');
+  if (descargar) descargar.onclick = ()=>{ window.location.href = info.descarga; };
+  const copiar = document.getElementById('btn-copiar-puente');
+  if (copiar) copiar.onclick = async ()=>{
+    try{ await navigator.clipboard.writeText(comando); copiar.textContent = '¡Copiado!'; }
+    catch(e){ copiar.textContent = 'Seleccione el texto'; }
+    setTimeout(()=>{ copiar.textContent = 'Copiar comando'; }, 1800);
+  };
+  const comprobar = document.getElementById('btn-comprobar-puente');
+  if (comprobar) comprobar.onclick = ()=> comprobarPuente(true);
+  const imp = document.getElementById('btn-ir-importar');
+  if (imp) imp.onclick = ()=>{
+    const det = document.querySelector('details');
+    if (det){ det.open = true; det.scrollIntoView({behavior:'smooth', block:'center'}); }
+  };
+  if (!enWindows) iniciarEsperaPuente();
+}
+
+function cerrarPanelPuente(){
+  detenerEsperaPuente();
+  const c = $('#aviso-fuente'); if (c) c.innerHTML = '';
+}
+
+function iniciarEsperaPuente(){
+  detenerEsperaPuente();
+  let intentos = 0;
+  estado.esperaPuente = setInterval(async ()=>{
+    intentos++;
+    if (intentos > 100){                      // ~5 minutos
+      detenerEsperaPuente();
+      escribirEstadoPuente('No se detectó la conexión. Descargue el puente y ' +
+                           'ejecútelo en la PC con ETABS.');
+      return;
+    }
+    await comprobarPuente(false);
+  }, 3000);
+}
+
+function detenerEsperaPuente(){
+  if (estado.esperaPuente){ clearInterval(estado.esperaPuente); estado.esperaPuente = null; }
+}
+
+function escribirEstadoPuente(txt, ok){
+  const el = document.getElementById('estado-puente');
+  if (!el) return;
+  el.textContent = txt;
+  el.className = 'estado-puente' + (ok ? ' ok' : '');
+}
+
+/* Busca una fuente nueva (la que envía el puente) y la deja seleccionada. */
+async function comprobarPuente(manual){
+  try{
+    const e = await api('/api/estado');
+    const tablas = e.fuentes.filter(f=>f.id!=='demo' && f.id!=='etabs');
+    if (!Array.isArray(estado.fuentesConocidas)){
+      estado.fuentesConocidas = tablas.map(f=>f.id);
+    }
+    const nuevas = tablas.filter(f=>!estado.fuentesConocidas.includes(f.id));
+    if (nuevas.length){
+      const f = nuevas[nuevas.length-1];
+      detenerEsperaPuente();
+      await usarFuente(f.id);
+      const n = (f.info && f.info.elementos) || '';
+      escribirEstadoPuente('Conectado: ' + f.nombre + (n? ' · '+n+' elementos':''), true);
+      mostrarMsgFuente('Conectado a ETABS mediante el puente', false);
+      $('#aviso-fuente').innerHTML = '';
+      return true;
+    }
+    if (manual){
+      escribirEstadoPuente(tablas.length
+        ? 'Hay ' + tablas.length + ' fuente(s) de tablas cargadas: elija una en la lista.'
+        : 'Todavía no llega ninguna conexión. Ejecute el puente en la PC con ETABS.');
+    }
+    return false;
+  }catch(err){
+    if (manual) escribirEstadoPuente('No se pudo comprobar: ' + err.message);
+    return false;
+  }
+}
+
+async function usarFuente(id){
+  estado.fuente = id;
+  const e = await api('/api/estado');
+  pintarFuentes(e.fuentes);
+  await cargarElementos();
 }
 
 function esc(t){

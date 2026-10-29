@@ -540,6 +540,61 @@ class TestConexionCOM(unittest.TestCase):
             self.assertEqual(len(f3.listar_elementos()), 28)
             registro.fuentes.pop("etabs", None)
 
+    def test_paquete_del_puente(self):
+        """El .zip que se descarga desde la interfaz debe funcionar tal cual."""
+        import subprocess
+        import tempfile
+        import zipfile
+        import importlib
+        servidor = importlib.import_module("servidor")
+        url = "https://8000-abc.e2b.app"
+        datos = servidor.construir_paquete_puente(url)
+        with tempfile.TemporaryDirectory() as tmp:
+            ruta = os.path.join(tmp, "puente.zip")
+            with open(ruta, "wb") as fh:
+                fh.write(datos)
+            with zipfile.ZipFile(ruta) as z:
+                nombres = set(z.namelist())
+                for requerido in ("puente_etabs.py", "SUBIR_seleccion.bat",
+                                  "SUBIR_todo.bat", "LEEME.txt",
+                                  "e060/etabs/com.py", "e060/etabs/exportar.py"):
+                    self.assertIn(requerido, nombres)
+                for n in nombres:
+                    if n.endswith(".py"):
+                        compile(z.read(n).decode("utf-8"), n, "exec")
+                subir = z.read("SUBIR_seleccion.bat").decode("ascii")
+                self.assertIn(url, subir)
+                self.assertIn("--seleccionados", subir)
+                self.assertIn("\r\n", subir)
+                leeme = z.read("LEEME.txt").decode("utf-8")
+                self.assertIn(url, leeme)
+                z.extractall(tmp)
+            # el puente descargado se ejecuta realmente (sin ETABS: --demo)
+            salida = os.path.join(tmp, "salida")
+            r = subprocess.run([sys.executable, "puente_etabs.py", "--demo",
+                                "--carpeta", salida],
+                               cwd=tmp, capture_output=True, text=True, timeout=120)
+            self.assertEqual(r.returncode, 0, r.stderr)
+            self.assertTrue(os.path.isfile(
+                os.path.join(salida, "ElementForces_Frames.csv")))
+
+    def test_url_publica_del_puente(self):
+        import importlib
+        servidor = importlib.import_module("servidor")
+
+        class H:
+            def __init__(self, host, proto=None):
+                self.headers = {"Host": host}
+                if proto:
+                    self.headers["X-Forwarded-Proto"] = proto
+
+        self.assertEqual(servidor.url_publica(H("localhost:8000")),
+                         "http://localhost:8000")
+        self.assertEqual(servidor.url_publica(H("8000-abc.e2b.app")),
+                         "https://8000-abc.e2b.app")
+        self.assertEqual(servidor.url_publica(H("10.0.0.5:8000", "https")),
+                         "https://10.0.0.5:8000")
+
     def test_info_modelo(self):
         with simulador_com.instalar():
             fuente = self._conectar()

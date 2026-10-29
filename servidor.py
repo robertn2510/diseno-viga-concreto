@@ -22,9 +22,11 @@ import re
 import sys
 import tempfile
 import threading
+import zipfile
 import traceback
 import uuid
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from io import BytesIO
 from urllib.parse import parse_qs, urlparse
 
 RAIZ = os.path.dirname(os.path.abspath(__file__))
@@ -32,6 +34,7 @@ WEB = os.path.join(RAIZ, "web")
 SALIDAS = os.path.join(RAIZ, "salidas")
 
 from e060 import __version__, servicio                      # noqa: E402
+from e060.etabs.com import diagnostico_com as diagnostico_etabs  # noqa: E402
 from e060.memoria import construir_memoria, guardar_pdf    # noqa: E402
 from e060.unidades import sistema_unidades                  # noqa: E402
 
@@ -84,10 +87,14 @@ class Registro:
             "solo_seleccionados": bool(getattr(self.fuentes.get("etabs"),
                                                "_solo_seleccionados", False))
             if conectado else False,
-            "descripcion": ("Conectado · usa los elementos seleccionados o todo el modelo"
-                            if conectado else
-                            "Conecta con ETABS v20–v23 abierto y usa los elementos "
-                            "seleccionados o todo el modelo."),
+            "descripcion": (
+                "Conectado · usa los elementos seleccionados o todo el modelo"
+                if conectado else
+                ("Conecta con ETABS v20–v23 abierto y usa los elementos "
+                 "seleccionados o todo el modelo.")
+                if diag["com_disponible"] else
+                "Lee tu ETABS de Windows y lo envía a esta interfaz (puente "
+                "en un clic, sin copiar archivos)."),
             "info": {"sistema": sys.platform},
             "disponible": bool(diag["com_disponible"]),
             "conectado": conectado,
@@ -152,6 +159,126 @@ def _descargar(handler, datos: bytes, nombre: str, tipo: str):
     handler.send_header("Content-Length", str(len(datos)))
     handler.end_headers()
     handler.wfile.write(datos)
+
+
+def url_publica(handler) -> str:
+    """
+    URL con la que el navegador está viendo esta interfaz.
+
+    Es la que debe usar el puente (`puente_etabs.py --subir …`) en la PC con
+    ETABS, aunque la interfaz corra en otro equipo (Linux, contenedor, web).
+    """
+    host = (handler.headers.get("Host") or "localhost:8000").strip()
+    proto = handler.headers.get("X-Forwarded-Proto")
+    if not proto:
+        proto = "https" if (host.endswith(".e2b.app") or host.endswith(".arena.ai")) \
+            else "http"
+    return f"{proto}://{host}"
+
+
+def archivos_paquete(raiz: str = RAIZ):
+    """
+    Archivos que acompañan al puente: el paquete `e060` completo (son pocos
+    módulos y sin dependencias externas) y el propio puente. Se recorre la
+    carpeta para no olvidar ningún módulo si el paquete crece.
+    """
+    archivos = ["puente_etabs.py"]
+    for base, carpetas, ficheros in os.walk(os.path.join(raiz, "e060")):
+        carpetas[:] = [c for c in carpetas if c != "__pycache__"]
+        for fichero in sorted(ficheros):
+            if fichero.endswith(".py"):
+                archivos.append(os.path.relpath(os.path.join(base, fichero), raiz)
+                                .replace(os.sep, "/"))
+    return archivos
+
+_LEEME = """PUENTE ETABS -> INTERFAZ WEB  (Diseno E.060)
+===========================================
+
+Sirve para usar el ETABS de ESTA PC desde la interfaz web, aunque la interfaz
+corra en otro equipo (Linux, contenedor o servidor).
+
+PASOS
+-----
+1. Instale Python 3.8 o superior DE 64 BITS (python.org) y marque
+   "Add Python to PATH" durante la instalacion.
+2. Instale la libreria de automatizacion COM (una vez):
+       pip install comtypes
+3. Abra ETABS v20, v21, v22 o v23, cargue el modelo, desbloquee el modelo
+   (Model > Unlock Model) y ejecute el analisis (Analyze > Run Analysis).
+4. Seleccione en ETABS las vigas y/o columnas que quiera disenar.
+5. Ejecute:
+       SUBIR_seleccion.bat        (solo las barras seleccionadas)
+   o bien
+       SUBIR_todo.bat             (todo el modelo)
+   Tambien puede ejecutar a mano:
+       python puente_etabs.py --seleccionados --subir {url}
+
+La interfaz mostrara automaticamente la fuente importada; elija el elemento y
+pulse "Disenar segun E.060".
+
+QUE HACE
+--------
+Lee las solicitaciones de ETABS (estaciones reales de la tabla
+"Element Forces - Frames"), las escribe en CSV y las envia por HTTP a la
+interfaz. No modifica el modelo.
+
+SI ALGO FALLA
+-------------
+* "No se encontro una instancia de ETABS": ETABS debe estar ABIERTO.
+* "No hay barras seleccionadas": seleccione barras o use SUBIR_todo.bat.
+* "La tabla de fuerzas esta vacia": ejecute el analisis en ETABS.
+* Error de conexion COM: use Python de 64 bits y "pip install comtypes".
+"""
+
+
+def construir_paquete_puente(url: str, raiz: str = RAIZ) -> bytes:
+    """
+    Paquete .zip para ejecutar el puente en el Windows con ETABS.
+
+    Incluye el puente, los modulos que necesita, un LEEME y dos .bat con la
+    dirección de esta interfaz ya escrita: el usuario solo descomprime y hace
+    doble clic.
+    """
+    def bat(nombre: str, argumentos: str, titulo: str) -> bytes:
+        lineas = [
+            "@echo off",
+            f"REM {titulo} - Diseno E.060",
+            'cd /d "%~dp0"',
+            f"title {titulo}",
+            "where python >nul 2>nul",
+            "if errorlevel 1 (",
+            "  echo [ERROR] No se encontro Python en el PATH.",
+            "  echo Instale Python 3.8+ de 64 bits desde python.org y marque",
+            '  echo "Add Python to PATH".',
+            "  pause",
+            "  exit /b 1",
+            ")",
+            'python -c "import comtypes" >nul 2>nul',
+            "if errorlevel 1 (",
+            "  echo [AVISO] Falta comtypes. Instalando...",
+            "  python -m pip install comtypes",
+            ")",
+            f"python puente_etabs.py {argumentos}",
+            "echo.",
+            "pause",
+        ]
+        return ("\r\n".join(lineas) + "\r\n").encode("ascii", "replace")
+
+    buffer = BytesIO()
+    with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as z:
+        for relativo in archivos_paquete(raiz):
+            ruta = os.path.join(raiz, relativo)
+            if os.path.isfile(ruta):
+                with open(ruta, "rb") as fh:
+                    z.writestr(relativo, fh.read())
+        z.writestr("LEEME.txt", _LEEME.format(url=url).encode("utf-8"))
+        z.writestr("SUBIR_seleccion.bat",
+                   bat("SUBIR_seleccion", f"--seleccionados --subir \"{url}\"",
+                       "Puente ETABS - barras seleccionadas"))
+        z.writestr("SUBIR_todo.bat",
+                   bat("SUBIR_todo", f"--subir \"{url}\"",
+                       "Puente ETABS - todo el modelo"))
+    return buffer.getvalue()
 
 
 def _opciones(datos: dict) -> servicio.OpcionesDiseno:
@@ -336,6 +463,32 @@ class Handler(BaseHTTPRequestHandler):
                     "sistema": sys.platform,
                     "etabs": diagnostico_com(),
                 })
+            if ruta == "/api/puente":
+                url = url_publica(self)
+                diag = diagnostico_etabs()
+                fuentes = [i for i in REGISTRO.fuentes if i != "etabs"]
+                return _json(self, {
+                    "ok": True,
+                    "url": url,
+                    "comando": f'python puente_etabs.py --seleccionados --subir "{url}"',
+                    "comando_todo": f'python puente_etabs.py --subir "{url}"',
+                    "descarga": "/descargas/puente.zip",
+                    "es_windows": diag["es_windows"],
+                    "com_disponible": diag["com_disponible"],
+                    "fuentes": fuentes,
+                    "instrucciones": [
+                        "En la PC con ETABS: instale Python 3.8+ de 64 bits y "
+                        "ejecute  pip install comtypes",
+                        "Abra ETABS con el modelo, desbloquee y ejecute el "
+                        "análisis; seleccione las barras a diseñar",
+                        "Descargue el puente, descomprímalo y ejecute "
+                        "SUBIR_seleccion.bat (o SUBIR_todo.bat)",
+                    ],
+                })
+            if ruta == "/descargas/puente.zip":
+                datos = construir_paquete_puente(url_publica(self))
+                return _descargar(self, datos, "puente_etabs.zip",
+                                  "application/zip")
             if ruta == "/api/elementos":
                 fuente_id = q.get("fuente", "demo")
                 fuente = REGISTRO.obtener(fuente_id)
