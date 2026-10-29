@@ -70,13 +70,22 @@ class Registro:
                 "descripcion": getattr(f, "descripcion", ""),
                 "info": f.info_modelo() if hasattr(f, "info_modelo") else {},
             })
-        # ETABS COM siempre se ofrece como opción en Windows
+        # ETABS COM: se informa si es posible en este equipo (solo Windows)
+        from e060.etabs.com import diagnostico_com
+        diag = diagnostico_com()
+        conectado = "etabs" in self.fuentes
         salida.append({
             "id": "etabs",
             "nombre": "ETABS en ejecución (COM/OAPI)",
-            "descripcion": "Conecta con ETABS v20–v23 abierto y usa los elementos "
-                           "seleccionados o todo el modelo.",
+            "descripcion": ("Conectado · usa los elementos seleccionados o todo el modelo"
+                            if conectado else
+                            "Conecta con ETABS v20–v23 abierto y usa los elementos "
+                            "seleccionados o todo el modelo."),
             "info": {"sistema": sys.platform},
+            "disponible": bool(diag["com_disponible"]),
+            "conectado": conectado,
+            "motivo": "" if diag["com_disponible"] else diag["motivo"],
+            "sugerencias": diag["sugerencias"] if not diag["com_disponible"] else [],
         })
         return salida
 
@@ -306,11 +315,13 @@ class Handler(BaseHTTPRequestHandler):
             if ruta.startswith("/web/"):
                 return self._estatico(ruta[5:])
             if ruta == "/api/estado":
+                from e060.etabs.com import diagnostico_com
                 return _json(self, {
                     "version": __version__,
                     "norma": "NTP E.060 Concreto Armado (RNE) + E.030-2018",
                     "fuentes": REGISTRO.listar(),
                     "sistema": sys.platform,
+                    "etabs": diagnostico_com(),
                 })
             if ruta == "/api/elementos":
                 fuente_id = q.get("fuente", "demo")
@@ -402,7 +413,7 @@ class Handler(BaseHTTPRequestHandler):
                 fuente = ETABSTablas.desde_archivos(
                     rutas["fuerzas"], rutas.get("secciones"), rutas.get("materiales"),
                     unidades=datos.get("unidades") or None,
-                    tipo_defecto=datos.get("tipo_defecto") or "Viga")
+                    tipo_defecto=datos.get("tipo_defecto") or "auto")
                 if datos.get("b") and datos.get("h"):
                     fuente.aplicar_dimensiones(float(datos.get("b")),
                                                float(datos.get("h")),
@@ -413,7 +424,17 @@ class Handler(BaseHTTPRequestHandler):
                                     "info": fuente.info_modelo(),
                                     "combos": fuente.listar_combos()[:50]})
             if ruta == "/api/conectar-etabs":
-                fuente = REGISTRO.conectar_etabs()
+                from e060.etabs.com import ConexionETABSError, diagnostico_com
+                diag = diagnostico_com()
+                if not diag["com_disponible"]:
+                    diag = dict(diag, ok=False, error=diag["motivo"],
+                                codigo=("plataforma" if not diag["es_windows"]
+                                        else "sin_com"))
+                    return _json(self, diag, 409)
+                try:
+                    fuente = REGISTRO.conectar_etabs()
+                except ConexionETABSError as exc:
+                    return _json(self, exc.to_dict(), 409)
                 return _json(self, {"ok": True, "fuente_id": "etabs",
                                     "info": fuente.info_modelo()})
             return _json(self, {"error": "Ruta no encontrada"}, 404)

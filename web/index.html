@@ -45,6 +45,26 @@ header .sep{flex:1}
 .fuente .txt{flex:1;min-width:0}
 .fuente .txt small{display:block;color:var(--gris);font-size:11px;white-space:nowrap;
   overflow:hidden;text-overflow:ellipsis}
+.fuente.no-disp{border-style:dashed;opacity:.82;background:#fcfcfd}
+.fuente.no-disp:hover{border-color:#c9a227;background:#fffdf3}
+.fuente.no-disp .dot{background:#b7791f}
+.badge-nodisp{font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:#8a6d1f;
+  border:1px solid #e3cf8e;background:#fff8e1;border-radius:999px;padding:1px 7px;flex:none}
+.aviso{margin:6px 0 12px;border:1px solid #e3cf8e;background:#fffdf3;border-radius:10px;
+  padding:11px 12px;font-size:12.5px;line-height:1.5}
+.aviso.informativo{border-color:#b9d3e8;background:#f4f9fd}
+.aviso b{display:block;margin-bottom:4px;color:#7a5c00;font-size:12.5px}
+.aviso.informativo b{color:var(--azul)}
+.aviso p{margin:2px 0 6px;color:#4a4636}
+.aviso ol{margin:4px 0 6px 18px;padding:0}
+.aviso li{margin:2px 0}
+.aviso .cerrar{float:right;cursor:pointer;color:#a08a4a;font-weight:700;border:none;
+  background:none;font-size:14px;line-height:1;padding:0 2px}
+.aviso code{background:#fff;border:1px solid #e6dcbb;border-radius:4px;padding:1px 5px;
+  font-family:Consolas,monospace;font-size:11.5px}
+.btn-mini{cursor:pointer;border:1px solid var(--azul2);background:#fff;color:var(--azul2);
+  border-radius:7px;padding:5px 10px;font-size:12px;font-weight:600}
+.btn-mini:hover{background:var(--azul2);color:#fff}
 .buscar{display:flex;gap:6px;margin:10px 0}
 .buscar input{flex:1;padding:8px 10px;border:1px solid var(--linea);border-radius:8px;outline:none}
 .buscar input:focus{border-color:var(--azul2);box-shadow:0 0 0 3px #2c52821f}
@@ -169,6 +189,7 @@ footer{text-align:center;font-size:11.5px;color:var(--gris);padding:8px 0 26px}
     <h2>Modelo y elementos</h2>
     <div class="cuerpo">
       <div id="fuentes"></div>
+      <div id="aviso-fuente"></div>
 
       <details style="margin:12px 0 6px">
         <summary style="cursor:pointer;font-size:12.5px;color:var(--azul2);font-weight:600">
@@ -345,7 +366,7 @@ footer{text-align:center;font-size:11.5px;color:var(--gris);padding:8px 0 26px}
 const $ = s => document.querySelector(s);
 const $$ = s => [...document.querySelectorAll(s)];
 const estado = {fuente:'demo', elementos:[], tipo:'Todos', elemento:null,
-                salida:null, memoria:null};
+                salida:null, memoria:null, avisoEtabsVisto:false};
 
 const fmt = (v,d=2) => (v===null||v===undefined||isNaN(v)) ? '—'
   : Number(v).toLocaleString('es-PE',{minimumFractionDigits:d,maximumFractionDigits:d});
@@ -355,7 +376,11 @@ async function api(ruta, opciones={}) {
   const txt = await r.text();
   let data;
   try { data = JSON.parse(txt); } catch(e) { throw new Error(txt.slice(0,400)); }
-  if (!r.ok || data.error) throw new Error(data.error || ('Error HTTP ' + r.status));
+  if (!r.ok || data.error){
+    const err = new Error(data.error || ('Error HTTP ' + r.status));
+    err.datos = data;                 // incluye codigo, sugerencias, motivo
+    throw err;
+  }
   return data;
 }
 
@@ -366,6 +391,11 @@ async function iniciar(){
     $('#version').textContent = 'v' + e.version;
     $('#estado-servidor').textContent = 'En línea · ' + (e.sistema==='win32'?'Windows':'Linux');
     pintarFuentes(e.fuentes);
+    // Si el servidor no es Windows, se informa una sola vez y sin obstruir.
+    if (e.etabs && e.etabs.es_windows === false && !estado.avisoEtabsVisto){
+      estado.avisoEtabsVisto = true;
+      mostrarAvisoETABS(e.etabs.motivo, e.etabs.sugerencias, true);
+    }
     await cargarElementos();
   }catch(err){
     $('#estado-servidor').textContent = 'Sin conexión';
@@ -377,21 +407,36 @@ function pintarFuentes(fuentes){
   const cont = $('#fuentes');
   cont.innerHTML = '';
   fuentes.forEach(f=>{
+    const noDisp = f.id==='etabs' && f.disponible === false;
     const div = document.createElement('div');
-    div.className = 'fuente' + (f.id===estado.fuente?' activa':'');
-    div.innerHTML = `<span class="dot" style="background:${f.id==='etabs'?'#b7791f':'#1f7a4d'}"></span>
-      <div class="txt"><b>${f.nombre}</b><small>${f.descripcion}</small></div>`;
+    div.className = 'fuente' + (f.id===estado.fuente?' activa':'') + (noDisp?' no-disp':'');
+    const color = f.id==='etabs' ? (f.conectado?'#1f7a4d':'#b7791f') : '#1f7a4d';
+    div.innerHTML = `<span class="dot" style="background:${color}"></span>
+      <div class="txt"><b>${f.nombre}</b><small>${f.descripcion}</small></div>` +
+      (noDisp? '<span class="badge-nodisp">no disponible</span>':'') +
+      (f.conectado? '<span class="badge-nodisp" style="color:#1f7a4d;border-color:#a9d6bd;background:#eefaf3">conectado</span>':'');
+    div.title = noDisp ? (f.motivo || 'No disponible en este equipo') : '';
     div.onclick = async ()=>{
+      if (f.id==='etabs' && noDisp){
+        mostrarAvisoETABS(f.motivo, f.sugerencias, true);
+        return;
+      }
       if (f.id==='etabs'){
         try{
           mostrarMsgFuente('Conectando con ETABS…', false);
-          const res = await api('/api/conectar-etabs',{method:'POST',
+          await api('/api/conectar-etabs',{method:'POST',
              headers:{'Content-Type':'application/json'}, body:'{}'});
           estado.fuente = 'etabs';
+          $('#aviso-fuente').innerHTML = '';
           await iniciarFuentesYLista();
-        }catch(err){ alert('No se pudo conectar con ETABS:\n' + err.message); }
+        }catch(err){
+          const d = err.datos || {};
+          mostrarAvisoETABS(d.error || err.message, d.sugerencias, false);
+          mostrarMsgFuente('Sin conexión con ETABS', true);
+        }
       } else {
         estado.fuente = f.id;
+        $('#aviso-fuente').innerHTML = '';
         await iniciarFuentesYLista();
       }
     };
@@ -404,6 +449,38 @@ async function iniciarFuentesYLista(){
   await cargarElementos();
 }
 function mostrarMsgFuente(txt, error){ $('#estado-servidor').textContent = txt; }
+
+/* Aviso en línea (sin ventanas modales) cuando la conexión COM/OAPI con ETABS
+   no es posible: explica el motivo y ofrece la alternativa de importar tablas. */
+function mostrarAvisoETABS(motivo, sugerencias, informativo){
+  const cont = $('#aviso-fuente');
+  if(!cont) return;
+  const items = (sugerencias||[]).map(t=>`<li>${esc(t)}</li>`).join('');
+  cont.innerHTML = `<div class="aviso${informativo?' informativo':''}">
+      <button class="cerrar" title="Cerrar" onclick="document.getElementById('aviso-fuente').innerHTML=''">×</button>
+      <b>${informativo?'Conexión directa con ETABS no disponible':'No se pudo conectar con ETABS'}</b>
+      <p>${esc(motivo||'')}</p>
+      ${items? '<ol>'+items+'</ol>' : ''}
+      ${informativo? `<p><b style="display:inline;color:#7a5c00">Puente automático:</b>
+         si tiene ETABS en su PC con Windows, ejecute allí
+         <code>pip install comtypes</code> y luego</p>
+         <p style="margin-bottom:6px"><code style="display:block;padding:6px 8px;word-break:break-all"
+            >python puente_etabs.py --seleccionados --subir ${esc(location.origin)}</code></p>
+         <p style="font-size:11.5px;color:#6b6449;margin-top:0">Exporta las barras
+         seleccionadas en ETABS y las envía a esta interfaz (no hace falta copiar archivos).</p>` : ''}
+      <p style="margin-bottom:0"><button class="btn-mini" id="btn-ir-importar">Importar tablas de ETABS ▸</button></p>
+    </div>`;
+  const btn = document.getElementById('btn-ir-importar');
+  if (btn) btn.onclick = ()=>{
+    const det = document.querySelector('details');
+    if (det){ det.open = true; det.scrollIntoView({behavior:'smooth', block:'center'}); }
+  };
+}
+
+function esc(t){
+  return String(t==null?'':t).replace(/[&<>"']/g, c=>
+    ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
 
 async function cargarElementos(){
   const texto = $('#buscar').value || '';

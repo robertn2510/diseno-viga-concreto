@@ -264,9 +264,10 @@ class ETABSTablas(FuenteETABS):
         dims: Dict[str, Tuple[float, float]] = {}
         mats: Dict[str, float] = {}
         asignaciones: Dict[str, str] = {}
+        material_de: Dict[str, str] = {}
         if ruta_secciones:
             for t in leer_tablas(ruta_secciones):
-                _extraer_dimensiones(t, dims)
+                _extraer_dimensiones(t, dims, material_de)
                 _extraer_asignaciones(t, asignaciones)
         if ruta_materiales:
             for t in leer_tablas(ruta_materiales):
@@ -336,7 +337,13 @@ class ETABSTablas(FuenteETABS):
             if not seccion and seccion_unica:
                 seccion = seccion_unica
             b, h = dims.get(seccion, (0.0, 0.0))
-            fc = mats.get(seccion, mats.get("_default", 210.0))
+            # f'c: por material de la sección; si no, por sección; si no, el
+            # primer material de concreto del modelo o 210 kgf/cm².
+            material = material_de.get(seccion, "")
+            fc = mats.get(material) or mats.get(seccion) or mats.get("_default") \
+                or (next(iter(mats.values())) if len(mats) == 1 else 210.0)
+            if not (100.0 < fc < 1500.0):
+                fc = 210.0
             tipo = _tipo_por_nombre(nombre) if tipo_defecto == "auto" else tipo_defecto
             elementos[nombre] = Elemento(
                 nombre=nombre, tipo=tipo, seccion=seccion,
@@ -405,8 +412,9 @@ def _buscar_tabla(tablas: Sequence[Tabla], palabras: Sequence[str]) -> Optional[
     return None
 
 
-def _extraer_dimensiones(tabla: Tabla, dims: Dict[str, Tuple[float, float]]) -> None:
-    """Extrae b, h de tablas de propiedades de sección."""
+def _extraer_dimensiones(tabla: Tabla, dims: Dict[str, Tuple[float, float]],
+                         material_de: Optional[Dict[str, str]] = None) -> None:
+    """Extrae b, h (y el material asociado) de tablas de propiedades de sección."""
     cab = tabla.encabezado()
     mapa = _mapear_columnas(cab)
     if not ({"t3", "t2"} <= set(mapa)):
@@ -426,6 +434,10 @@ def _extraer_dimensiones(tabla: Tabla, dims: Dict[str, Tuple[float, float]]) -> 
         b = longitud_a_cm(_a_float(reg[cab[mapa["t2"][0]]]), u2)
         if b > 0 and h > 0:
             dims[nombre] = (b, h)
+            if material_de is not None and "material" in mapa:
+                mat = str(reg[cab[mapa["material"][0]]]).strip()
+                if mat:
+                    material_de[nombre] = mat
 
 
 def _extraer_asignaciones(tabla: Tabla, mapa_salida: Dict[str, str]) -> None:

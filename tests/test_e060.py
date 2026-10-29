@@ -284,6 +284,92 @@ class TestMemoria(unittest.TestCase):
         self.assertIn("|", md)
 
 
+class TestExportacionYpuente(unittest.TestCase):
+    """Ida y vuelta: exportar tablas → reimportarlas → mismo diseño."""
+
+    @classmethod
+    def setUpClass(cls):
+        import tempfile
+        from e060.etabs.exportar import exportar_tablas
+        cls.tmp = tempfile.mkdtemp(prefix="e060_puente_")
+        cls.demo = ETABSDemo()
+        cls.rutas = exportar_tablas(cls.demo, cls.tmp)
+
+    def test_archivos_generados(self):
+        for clave in ("fuerzas", "secciones", "materiales"):
+            self.assertTrue(os.path.isfile(self.rutas[clave]), clave)
+            minimo = 50 if clave == "materiales" else 200
+            self.assertGreater(os.path.getsize(self.rutas[clave]), minimo)
+
+    def test_reimportacion_coincide_con_el_modelo(self):
+        fuente = ETABSTablas.desde_archivos(self.rutas["fuerzas"],
+                                            self.rutas["secciones"],
+                                            self.rutas["materiales"])
+        nombres = fuente.listar_elementos()
+        self.assertEqual(len(nombres), len(self.demo.listar_elementos()))
+        for n in nombres:
+            a, b = fuente.obtener_elemento(n), self.demo.obtener_elemento(n)
+            self.assertAlmostEqual(a.b, b.b, places=6)
+            self.assertAlmostEqual(a.h, b.h, places=6)
+            self.assertAlmostEqual(a.fc, b.fc, places=6)
+            self.assertAlmostEqual(a.L, b.L, delta=1.0)
+            self.assertEqual(a.tipo, b.tipo)
+            self.assertEqual(len(a.combos), len(b.combos))
+
+    def test_diseno_identico_tras_el_viaje(self):
+        fuente = ETABSTablas.desde_archivos(self.rutas["fuerzas"],
+                                            self.rutas["secciones"],
+                                            self.rutas["materiales"])
+        for nombre in ("V1-2", "C1-1"):
+            a = servicio.disenar_elemento(fuente.obtener_elemento(nombre),
+                                          servicio.OpcionesDiseno())
+            b = servicio.disenar_elemento(self.demo.obtener_elemento(nombre),
+                                          servicio.OpcionesDiseno())
+            self.assertEqual(a["tipo"], b["tipo"])
+            if a["tipo"] == "Viga":
+                ra, rb = a["resumen"], b["resumen"]
+                self.assertAlmostEqual(ra["corte_gobernante"]["s_conf"],
+                                       rb["corte_gobernante"]["s_conf"], places=3)
+                for fa, fb in zip(ra["filas"], rb["filas"]):
+                    self.assertAlmostEqual(fa["phiMn_pos"], fb["phiMn_pos"], places=2)
+            else:
+                self.assertAlmostEqual(a["resumen"]["dcr"], b["resumen"]["dcr"],
+                                       places=3)
+
+    def test_fc_por_material_en_tablas(self):
+        """f'c se toma del material de la sección, no de un valor fijo."""
+        fuente = ETABSTablas.desde_archivos(self.rutas["fuerzas"],
+                                            self.rutas["secciones"],
+                                            self.rutas["materiales"])
+        for n in fuente.listar_elementos():
+            self.assertAlmostEqual(fuente.obtener_elemento(n).fc, 210.0, places=6)
+
+
+class TestConexionETABS(unittest.TestCase):
+    """Diagnóstico de la conexión COM/OAPI (sin ETABS en el entorno de prueba)."""
+
+    def test_diagnostico_estructura(self):
+        from e060.etabs import com
+        d = com.diagnostico_com()
+        for clave in ("plataforma", "es_windows", "com_disponible", "motivo",
+                      "sugerencias"):
+            self.assertIn(clave, d)
+        self.assertIsInstance(d["sugerencias"], list)
+
+    def test_error_con_sugerencias(self):
+        from e060.etabs import com
+        if com.diagnostico_com()["com_disponible"]:
+            self.skipTest("Hay COM disponible: la conexión sí es posible")
+        with self.assertRaises(com.ConexionETABSError) as ctx:
+            com.conectar()
+        err = ctx.exception
+        self.assertIn(err.codigo, ("plataforma", "sin_com", "etabs_cerrado"))
+        datos = err.to_dict()
+        self.assertFalse(datos["ok"])
+        self.assertTrue(datos["error"])
+        self.assertTrue(datos["sugerencias"])
+
+
 class TestFiguras(unittest.TestCase):
 
     @staticmethod

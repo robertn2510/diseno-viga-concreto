@@ -6,7 +6,7 @@ solicitaciones directamente de **ETABS (versiones 20, 21, 22 y 23)**, permite
 **seleccionar un elemento del modelo** y entrega su **memoria de cálculo**
 completa (HTML, PDF y Markdown).
 
-> Versión 4.0 — reemplaza la versión 3 (solo vigas, entrada manual), conservada
+> Versión 4.1 — reemplaza la versión 3 (solo vigas, entrada manual), conservada
 > en `legado/diseno_viga_concreto_v3.py`.
 
 ---
@@ -34,7 +34,7 @@ git clone <repositorio>
 cd diseno-viga-concreto
 
 # El motor no requiere dependencias externas (solo biblioteca estándar de Python 3.8+)
-python -m unittest discover -s tests -v     # verificación del motor (32 pruebas)
+python -m unittest discover -s tests -v     # verificación del motor (46 pruebas)
 ```
 
 Dependencias **opcionales**:
@@ -89,7 +89,29 @@ motor de diseño con solicitaciones reales de análisis.
 
 ---
 
-### 3.5 Línea de comandos
+### 3.5 Puente con ETABS en otra máquina (`puente_etabs.py`)
+
+La automatización COM/OAPI de ETABS **solo funciona en Windows**. Si la interfaz
+web corre en otro equipo (Linux, contenedor, servidor), el puente se ejecuta en
+el Windows donde está abierto ETABS y envía las solicitaciones a la interfaz:
+
+```bat
+REM en el PC con Windows y ETABS abierto
+pip install comtypes
+python puente_etabs.py --seleccionados --subir https://<servidor>:8000
+```
+
+* `--seleccionados` exporta solo las barras elegidas en ETABS (deseleccione para
+  exportar todo el modelo).
+* `--carpeta salida` guarda los tres CSV con formato de ETABS si prefiere
+  cargarlos a mano con **Importar tablas**.
+* `--demo` prueba el puente sin ETABS.
+* `--elemento V1-2` (repetible) limita la exportación a ciertos elementos.
+
+Al terminar, la fuente aparece en la interfaz y basta seleccionar el elemento
+para diseñarlo y descargar su memoria.
+
+### 3.6 Línea de comandos
 
 ```bash
 python -m e060.cli --demo --listar
@@ -124,12 +146,41 @@ Detalles técnicos implementados:
 * Las solicitaciones se leen combinación por combinación
   (`Results.Setup.SetComboSelectedForOutput` + `Results.FrameForce`).
 
+### 4.1 La conexión en vivo requiere Windows
+
+La interfaz OAPI de ETABS es **automatización COM**, que solo existe en Windows.
+Si la aplicación web corre en Linux/macOS (por ejemplo, en un servidor o en una
+máquina virtual), el programa **no intenta conectarse a ciegas**: al abrir la
+interfaz detecta la situación y muestra un aviso en el panel lateral con el
+motivo y las alternativas. La tarjeta *ETABS en ejecución* queda marcada como
+**no disponible** y `POST /api/conectar-etabs` responde `409` con el diagnóstico
+estructurado:
+
+```json
+{"ok": false, "codigo": "plataforma", "es_windows": false,
+ "error": "La automatización COM/OAPI de ETABS solo existe en Windows; …",
+ "sugerencias": ["Exporte las tablas … ", "…", "…"]}
+```
+
+Rutas equivalentes, según el caso de uso:
+
+| Situación | Cómo trabajar |
+|---|---|
+| Windows con ETABS abierto | App de escritorio o web local → **Conectar ETABS** (COM/OAPI). |
+| Servidor/web en Linux o macOS | **Importar tablas** exportadas del modelo (`Element Forces - Frames`). |
+| Sin ETABS (pruebas, docencia) | **Modelo demo** o los CSV de `ejemplos/`. |
+
+La propia app de escritorio verifica antes de conectar y, si no es posible,
+ofrece importar las tablas en el mismo diálogo.
+
 **Solución de problemas**
 
 | Síntoma | Causa / solución |
 |---|---|
 | "No se pudo conectar con ETABS" | ETABS cerrado o con el modelo bloqueado; abra el modelo y desbloquéelo. |
-| "No se encontró la librería de automatización COM" | `pip install comtypes` (Python de 64 bits). |
+| "No se encontró la librería de automatización COM" | `pip install comtypes` (Python de 64 bits, el mismo con que corre el programa). |
+| "…solo existe en Windows" | El servidor no es Windows: use **Importar tablas** o ejecute la app de escritorio en el mismo Windows de ETABS. |
+| `pywin32`/`comtypes` instalado y sigue fallando | Python de 32 bits frente a ETABS de 64 bits (o al revés); use la misma arquitectura. |
 | No aparecen combinaciones | Verifique que existan *Load Combinations* en el modelo. |
 | El programa lista todo el modelo | Seleccione las barras en ETABS antes de conectar o de actualizar la lista. |
 
@@ -261,15 +312,17 @@ diseno-viga-concreto/
 │   ├── viga.py               # diseño de vigas (flexión, corte, torsión)
 │   ├── columna.py            # diseño de columnas (biaxial, esbeltez, confinamiento)
 │   ├── combinaciones.py      # combinaciones y envolventes
-│   ├── etabs/                # conectores: COM/OAPI, tablas y modelo demo
+│   ├── etabs/                # conectores: COM/OAPI, tablas, exportación y demo
 │   ├── servicio.py           # orquestación elemento → diseño → memoria
 │   ├── figuras.py            # figuras SVG
-│   └── memoria.py            # memoria de cálculo (HTML/PDF/Markdown)
+│   ├── memoria.py            # memoria de cálculo (HTML/PDF/Markdown)
+│   └── cli.py                # consola (python -m e060.cli)
 ├── web/index.html            # interfaz web (una sola página, sin dependencias)
 ├── servidor.py               # servidor web local + API JSON
+├── puente_etabs.py           # puente: exporta de ETABS (Windows) y sube a la web
 ├── app_escritorio.py         # interfaz Tkinter (Windows/ETABS)
 ├── ejemplos/                 # tablas de ETABS de ejemplo (y su generador)
-├── tests/test_e060.py        # 40 pruebas automáticas
+├── tests/test_e060.py        # 46 pruebas automáticas
 ├── legado/                   # versión 3 (solo vigas, entrada manual)
 └── salidas/                  # memorias generadas (no versionado)
 ```

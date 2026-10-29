@@ -23,6 +23,8 @@ from __future__ import annotations
 
 import math
 import os
+import platform
+import sys
 import time
 from typing import Dict, List, Optional, Sequence, Tuple
 
@@ -46,6 +48,104 @@ MENSAJE_SIN_COMTYPES = (
 )
 
 
+class ConexionETABSError(RuntimeError):
+    """
+    Error de conexión con ETABS con información para la interfaz.
+
+    codigo    : 'plataforma' | 'sin_com' | 'etabs_cerrado' | 'error_com'
+    sugerencias: lista de pasos concretos para el usuario.
+    """
+
+    def __init__(self, mensaje: str, codigo: str = "error_com",
+                 sugerencias: Optional[Sequence[str]] = None,
+                 plataforma: Optional[str] = None):
+        super().__init__(mensaje)
+        self.codigo = codigo
+        self.sugerencias = list(sugerencias or [])
+        self.plataforma = plataforma or sys.platform
+
+    def to_dict(self) -> dict:
+        return {
+            "ok": False,
+            "codigo": self.codigo,
+            "error": str(self),
+            "plataforma": self.plataforma,
+            "es_windows": self.plataforma.startswith("win"),
+            "sugerencias": self.sugerencias,
+        }
+
+
+def es_windows() -> bool:
+    return sys.platform.startswith("win")
+
+
+def diagnostico_com() -> dict:
+    """
+    Indica si la conexión COM con ETABS es posible en este equipo y por qué.
+
+    Se usa en la interfaz para no ofrecer un botón que no puede funcionar:
+    la automatización OAPI de ETABS (v20–v23) solo existe en Windows.
+    """
+    info = {
+        "plataforma": sys.platform,
+        "sistema": platform.system(),
+        "es_windows": es_windows(),
+        "python": platform.python_version(),
+        "com_disponible": False,
+        "backend": None,
+        "motivo": "",
+        "sugerencias": [],
+    }
+    if not es_windows():
+        info["motivo"] = ("La automatización COM/OAPI de ETABS solo existe en "
+                          "Windows; este servidor corre en "
+                          f"{platform.system()}.")
+        info["sugerencias"] = [
+            "Exporte las tablas del modelo en ETABS (Display › Tables › "
+            "Analysis › Element Forces - Frames) y cárguelas con «Importar "
+            "tablas».",
+            "También puede usar las tablas de ejemplo de la carpeta ejemplos/ "
+            "para probar el flujo completo.",
+            "Para la conexión directa, ejecute app_escritorio.py en el mismo "
+            "Windows donde está abierto ETABS v20–v23.",
+        ]
+        return info
+    try:
+        backend, _, _ = _importar_com()
+        info["com_disponible"] = True
+        info["backend"] = backend
+    except ConexionETABSError as exc:
+        info["motivo"] = str(exc)
+        info["sugerencias"] = exc.sugerencias
+    return info
+
+
+def _mensaje_sin_com() -> ConexionETABSError:
+    if not es_windows():
+        return ConexionETABSError(
+            "La conexión directa con ETABS no está disponible en este sistema: "
+            "la automatización COM/OAPI solo existe en Windows.",
+            codigo="plataforma",
+            sugerencias=[
+                "Use «Importar tablas»: en ETABS, Display › Tables › Analysis › "
+                "Element Forces - Frames, luego File › Export › Tables › to CSV.",
+                "Los archivos de la carpeta ejemplos/ sirven para probar el "
+                "programa sin ETABS.",
+                "Para conectar en vivo, abra el proyecto en Windows con "
+                "app_escritorio.py (misma máquina que ETABS).",
+            ])
+    return ConexionETABSError(
+        MENSAJE_SIN_COMTYPES,
+        codigo="sin_com",
+        sugerencias=[
+            "Instale la librería en el mismo Python con el que corre el "
+            "programa: pip install comtypes  (o  pip install pywin32).",
+            "Verifique que Python sea de 64 bits, igual que ETABS.",
+            "Abra ETABS v20–v23 con el modelo cargado antes de pulsar "
+            "«Conectar ETABS».",
+        ])
+
+
 def _importar_com():
     """Devuelve (modulo, activo, crear) usando comtypes o win32com."""
     try:
@@ -57,7 +157,7 @@ def _importar_com():
         import win32com.client as wc  # type: ignore
         return ("win32com", wc.GetActiveObject, wc.Dispatch)
     except Exception:
-        raise RuntimeError(MENSAJE_SIN_COMTYPES)
+        raise _mensaje_sin_com() from None
 
 
 def _desempaquetar(res):
@@ -102,12 +202,19 @@ class ETABSCom(FuenteETABS):
                 try:
                     self.EtabsObject = create(PROGID_ETABS)
                 except Exception as exc:  # noqa: BLE001
-                    raise RuntimeError(
-                        "No se pudo conectar con ETABS.\n"
-                        "Verifique que ETABS esté abierto con el modelo cargado "
-                        "y que la versión sea 20, 21, 22 o 23.\n"
-                        f"Detalle técnico: {error or exc}"
-                    ) from exc
+                    raise ConexionETABSError(
+                        "No se encontró una instancia de ETABS en ejecución.\n"
+                        "Abra ETABS v20–v23 con el modelo cargado y vuelva a "
+                        "intentar; o cargue las tablas exportadas del modelo.\n"
+                        f"Detalle técnico: {error or exc}",
+                        codigo="etabs_cerrado",
+                        sugerencias=[
+                            "Abra ETABS v20, v21, v22 o v23 y cargue el modelo.",
+                            "Si ETABS está abierto, confirme que la licencia "
+                            "esté activa y que el modelo no esté en modo modal.",
+                            "Alternativa sin ETABS: importe las tablas "
+                            "«Element Forces - Frames» exportadas a CSV.",
+                        ]) from exc
         try:
             self.EtabsObject.ApplicationStart()
         except Exception:                 # ya iniciado

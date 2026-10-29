@@ -453,10 +453,11 @@ class AppE060(tk.Tk):
         # las fuentes de tablas se cargan directamente en el evento del archivo
 
     def conectar_etabs(self):
-        try:
-            from e060.etabs import conectar
-        except Exception:
-            messagebox.showerror("ETABS", "La conexión COM solo está disponible en Windows.")
+        from e060.etabs.com import ConexionETABSError, diagnostico_com
+        diag = diagnostico_com()
+        if not diag["com_disponible"]:
+            self._mostrar_sin_etabs(diag["motivo"], diag["sugerencias"])
+            self.var["estado"].set("Sin conexión con ETABS.")
             return
         self.var["estado"].set("Conectando con ETABS…")
         self.update_idletasks()
@@ -474,13 +475,25 @@ class AppE060(tk.Tk):
             self.cargar_elementos()
             self.var["estado"].set("Conectado a ETABS %s · modelo: %s"
                                    % (info.get("version", "?"), info.get("modelo", "")))
-        except Exception as exc:
-            messagebox.showerror("Conexión con ETABS",
-                                 "No se pudo conectar.\n\n"
-                                 "1. Verifique que ETABS v20–v23 esté abierto con el modelo.\n"
-                                 "2. Instale comtypes: pip install comtypes\n\n"
-                                 "Detalle: %s" % exc)
+        except ConexionETABSError as exc:
+            self._mostrar_sin_etabs(str(exc), exc.sugerencias)
             self.var["estado"].set("Sin conexión con ETABS.")
+        except Exception as exc:
+            self._mostrar_sin_etabs(str(exc), [
+                "Verifique que ETABS v20–v23 esté abierto con el modelo cargado.",
+                "Instale comtypes en el mismo Python: pip install comtypes",
+                "Como alternativa, importe las tablas «Element Forces - Frames».",
+            ])
+            self.var["estado"].set("Sin conexión con ETABS.")
+
+    def _mostrar_sin_etabs(self, motivo, sugerencias):
+        """Aviso de conexión con la alternativa de importar tablas."""
+        pasos = "\n".join(f"{i+1}. {t}" for i, t in enumerate(sugerencias or []))
+        if messagebox.askyesno(
+                "Conexión con ETABS",
+                f"{motivo}\n\n{pasos}\n\n"
+                "¿Desea importar ahora las tablas exportadas de ETABS?"):
+            self.importar_tablas()
 
     def importar_tablas(self):
         ruta_f = filedialog.askopenfilename(
